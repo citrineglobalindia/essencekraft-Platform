@@ -1,0 +1,17 @@
+type P = { size?: number };
+const s = (size = 22) => ({ width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true });
+export const SearchIcon = ({ size }: P) => <svg {...s(size)}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>;
+export const CartIcon = ({ size }: P) => <svg {...s(size)}><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6" /><circle cx="10" cy="20" r="1.3" /><circle cx="17" cy="20" r="1.3" /></svg>;
+export const HeartIcon = ({ size }: P) => <svg {...s(size)}><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" /></svg>;
+export const UserIcon = ({ size }: P) => <svg {...s(size)}><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" /></svg>;
+export const MenuIcon = ({ size }: P) => <svg {...s(size)}><path d="M4 7h16M4 12h16M4 17h16" /></svg>;
+export const CloseIcon = ({ size }: P) => <svg {...s(size)}><path d="M6 6l12 12M18 6 6 18" /></svg>;
+export const LeafIcon = ({ size }: P) => <svg {...s(size)}><path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14zM5 19l7-7" /></svg>;
+export const FlaskIcon = ({ size }: P) => <svg {...s(size)}><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3M7.5 15h9" /></svg>;
+export const DropIcon = ({ size }: P) => <svg {...s(size)}><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z" /></svg>;
+export const PinIcon = ({ size }: P) => <svg {...s(size)}><path d="M12 21s7-6 7-12a7 7 0 0 0-14 0c0 6 7 12 7 12z" /><circle cx="12" cy="9" r="2.5" /></svg>;
+export const BoxIcon = ({ size }: P) => <svg {...s(size)}><path d="M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10" /></svg>;
+export const ChartIcon = ({ size }: P) => <svg {...s(size)}><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>;
+export const TagIcon = ({ size }: P) => <svg {...s(size)}><path d="M3 12V4h8l10 10-8 8z" /><circle cx="7.5" cy="8.5" r="1.3" /></svg>;
+export const UsersIcon = ({ size }: P) => <svg {...s(size)}><circle cx="9" cy="8" r="3.5" /><path d="M2 20c1-3.5 3.8-5.5 7-5.5s6 2 7 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c2 .6 3.4 2.4 4 5.5" /></svg>;
+export const LayersIcon = ({ size }: P) => <svg {...s(size)}><path d="M12 3 2 8l10 5 10-5zM2 13l10 5 10-5M2 18l10 5 10-5" /></svg>;
