@@ -20,13 +20,18 @@ export function Footer() {
             <span className="logo logo-left"><b>EssenceKraft</b><small>NATURE IN EVERY DROP</small></span>
             <p>Pure essential and carrier oils, bottled in India.</p>
             <div className="footer-cta">
-              <a className="btn btn-pill footer-wa" href={`https://wa.me/${WHATSAPP}`} target="_blank" rel="noopener" data-track="whatsapp_click"><WaIcon />Chat on WhatsApp</a>
+              <a className="btn btn-pill footer-wa" aria-label="Chat on WhatsApp" href={`https://wa.me/${WHATSAPP}`} target="_blank" rel="noopener" data-track="whatsapp_click"><WaIcon /><span>Chat on WhatsApp</span></a>
               <a className="footer-mail" href="mailto:care@essencekraft.in">care@essencekraft.in</a>
             </div>
           </div>
           <nav className="footer-links" aria-label="Footer">
             {GROUPS.map(([h, links]) => (
               <div key={h}><h4>{h}</h4><ul>{links.map(([l, href]) => <li key={href}><Link href={href}>{l}</Link></li>)}</ul></div>
+            ))}
+          </nav>
+          <nav className="footer-acc" aria-label="Footer links">
+            {GROUPS.map(([h, links]) => (
+              <details key={h}><summary>{h}</summary><ul>{links.map(([l, href]) => <li key={href}><Link href={href}>{l}</Link></li>)}</ul></details>
             ))}
           </nav>
         </div>
