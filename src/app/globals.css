@@ -298,3 +298,25 @@ tr:last-child td { border-bottom: 0; }
 @media (max-width: 767px) { .hide-sm, .trust .hide-sm { display: none; } }
 .suggest a > span:first-child svg { width: 22px; height: 40px; position: static; transform: none; }
 .empty { align-content: center; }
+
+/* Mobile menu (portal) */
+.mmenu .drawer-head { padding: 14px 16px; }
+.mmenu .drawer-body { padding: 16px 16px 8px; }
+.mm-quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+.mm-quick a { display: grid; justify-items: center; gap: 6px; padding: 14px 6px; background: var(--sand); border-radius: var(--r-md); font-size: 13px; font-weight: 600; color: var(--forest); }
+.mm-h { margin: 18px 0 6px; font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); font-weight: 600; }
+.mm-list a { display: flex; justify-content: space-between; align-items: center; min-height: 48px; border-bottom: 1px solid var(--line); font-weight: 500; }
+.mm-list a span[aria-hidden] { color: var(--muted); font-size: 20px; }
+.mm-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.mm-chips a { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; font-size: 14px; background: #fff; }
+.mm-chips i { width: 10px; height: 10px; border-radius: 50%; }
+
+/* Bottom navigation (mobile / tablet) */
+.bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 35; display: grid; grid-template-columns: repeat(5, 1fr); background: rgba(255,255,255,.97); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); box-shadow: 0 -4px 16px rgba(15,61,46,.06); }
+.bottom-nav a, .bottom-nav button { display: grid; justify-items: center; align-content: center; gap: 3px; min-height: 58px; border: 0; background: none; color: var(--muted); font-size: 11px; font-weight: 600; cursor: pointer; padding: 0; }
+.bottom-nav [aria-current="page"] { color: var(--forest); }
+.bottom-nav [aria-current="page"] svg { stroke-width: 2.3; }
+.bn-ic { position: relative; display: block; }
+.bn-ic .badge-count { top: -6px; right: -10px; }
+body:has(.bottom-nav) { padding-bottom: calc(58px + env(safe-area-inset-bottom)); }
+@media (min-width: 1024px) { .bottom-nav { display: none; } body:has(.bottom-nav) { padding-bottom: 0; } }

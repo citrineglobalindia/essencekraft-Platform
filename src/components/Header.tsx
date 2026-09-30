@@ -1,13 +1,14 @@
 'use client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCart } from '@/lib/cart';
 import { CartIcon, CloseIcon, HeartIcon, MenuIcon, SearchIcon, UserIcon } from './Icons';
 import { Bottle } from './Bottle';
+import { MobileMenu } from './MobileMenu';
 
 export type SearchItem = { slug: string; name: string; tagline: string; botanical: string; color: string; concerns: string[] };
-type Nav = { concerns: { slug: string; name: string }[]; categories: { slug: string; name: string }[] };
+type Nav = { concerns: { slug: string; name: string; color?: string }[]; categories: { slug: string; name: string }[] };
 
 function Search({ index, concerns, autoFocus, onDone }: { index: SearchItem[]; concerns: Nav['concerns']; autoFocus?: boolean; onDone?: () => void }) {
   const [q, setQ] = useState('');
@@ -60,6 +61,7 @@ function Search({ index, concerns, autoFocus, onDone }: { index: SearchItem[]; c
 export function Header({ index, nav }: { index: SearchItem[]; nav: Nav }) {
   const { count, setOpen } = useCart();
   const [menu, setMenu] = useState(false);
+  const closeMenu = useCallback(() => setMenu(false), []);
   return (
     <header className="header">
       <div className="wrap">
@@ -84,21 +86,7 @@ export function Header({ index, nav }: { index: SearchItem[]; nav: Nav }) {
         </div>
         <div className="mobile-search"><Search index={index} concerns={nav.concerns} /></div>
       </div>
-      {menu && <>
-        <div className="scrim" onClick={() => setMenu(false)} />
-        <nav className="drawer left" aria-label="Main menu">
-          <div className="drawer-head"><b>Menu</b><button className="icon-btn" aria-label="Close menu" onClick={() => setMenu(false)}><CloseIcon /></button></div>
-          <div className="drawer-body menu-list" onClick={e => { if ((e.target as HTMLElement).closest('a')) setMenu(false); }}>
-            <Link href="/shop">All products</Link>
-            {nav.categories.map(c => <Link key={c.slug} href={`/shop?category=${c.slug}`}>{c.name}</Link>)}
-            <p className="muted" style={{ margin: '18px 0 4px', fontSize: 13 }}>Shop by concern</p>
-            {nav.concerns.map(c => <Link key={c.slug} href={`/concern/${c.slug}`}>{c.name}</Link>)}
-            <Link href="/shop?offer=1">Offers</Link>
-            <Link href="/wishlist">Wishlist</Link>
-            <Link href="/account">Track order</Link>
-          </div>
-        </nav>
-      </>}
+      <MobileMenu open={menu} onClose={closeMenu} nav={nav} />
     </header>
   );
 }
