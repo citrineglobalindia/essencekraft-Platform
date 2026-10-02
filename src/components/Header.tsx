@@ -75,6 +75,7 @@ export function Header({ index, nav }: { index: SearchItem[]; nav: Nav }) {
             {nav.categories.filter(c => c.slug !== 'essential-oils').map(c => <li key={c.slug}><Link href={`/shop?category=${c.slug}`}>{c.name}</Link></li>)}
             <li><Link href="/concern/sleep-calm">Wellness</Link>
               <div className="mega" style={{ gridTemplateColumns: '200px' }}><div>{nav.concerns.map(c => <Link key={c.slug} href={`/concern/${c.slug}`}>{c.name}</Link>)}</div></div></li>
+            <li><Link href="/categories">Learn</Link></li>
             <li><Link href="/shop?offer=1">Offers</Link></li>
           </ul>
           <div className="header-search"><Search index={index} concerns={nav.concerns} /></div>
