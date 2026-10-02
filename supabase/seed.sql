@@ -3,8 +3,7 @@ insert into settings(key,value) values ('store','{"free_shipping_min":999,"annou
 insert into coupons(code,kind,value,min_cart) values ('WELCOME10','percent',10,0) on conflict do nothing;
 insert into categories(slug,name,intro,sort) values ('essential-oils','Essential Oils','Single-origin, steam-distilled and cold-pressed essential oils.',0) on conflict (slug) do nothing;
 insert into categories(slug,name,intro,sort) values ('carrier-oils','Carrier Oils','Gentle base oils for diluting essential oils before use on skin and hair.',1) on conflict (slug) do nothing;
-insert into categories(slug,name,intro,sort) values ('blends','Blends','Ready-to-use combinations built around a single intention.',2) on conflict (slug) do nothing;
-insert into categories(slug,name,intro,sort) values ('diffusers','Diffusers','Ultrasonic diffusers for a room that smells the way you want it to.',3) on conflict (slug) do nothing;
+insert into categories(slug,name,intro,sort) values ('diffusers','Diffusers','Ultrasonic diffusers for a room that smells the way you want it to.',2) on conflict (slug) do nothing;
 insert into concerns(slug,name,intro,color,sort) values ('sleep-calm','Sleep & Calm','Soft, floral and woody oils for winding down.','#7a5a9e',0) on conflict (slug) do nothing;
 insert into concerns(slug,name,intro,color,sort) values ('focus-energy','Focus & Energy','Bright citrus and mint for a clearer head.','#d99a1e',1) on conflict (slug) do nothing;
 insert into concerns(slug,name,intro,color,sort) values ('stress-relief','Stress Relief','Grounding aromas for heavier days.','#5f8a7a',2) on conflict (slug) do nothing;
