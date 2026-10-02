@@ -5,7 +5,6 @@ import type { Product, Concern, Category } from './types';
 export const categories: Category[] = [
   { slug: 'essential-oils', name: 'Essential Oils', intro: 'Single-origin, steam-distilled and cold-pressed essential oils.' },
   { slug: 'carrier-oils', name: 'Carrier Oils', intro: 'Gentle base oils for diluting essential oils before use on skin and hair.' },
-  { slug: 'blends', name: 'Blends', intro: 'Ready-to-use combinations built around a single intention.' },
   { slug: 'diffusers', name: 'Diffusers', intro: 'Ultrasonic diffusers for a room that smells the way you want it to.' },
 ];
 
