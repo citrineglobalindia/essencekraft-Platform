@@ -31,7 +31,7 @@ export default async function Home() {
     </section>
 
     <section className="wrap promos">
-      <div className="promo bundle"><div><h2>Bundle &amp; Save</h2><p className="muted" style={{ marginTop: 6 }}>Curated essential oil sets for your complete wellness routine.</p><Link className="btn btn-primary" href="/shop?category=blends">Shop bundles</Link></div>
+      <div className="promo bundle"><div><h2>Bundle &amp; Save</h2><p className="muted" style={{ marginTop: 6 }}>Curated essential oil sets for your complete wellness routine.</p><Link className="btn btn-primary" href="/shop?offer=1">Shop offers</Link></div>
         <div className="promo-art" aria-hidden>{products.slice(0, 5).map(p => <Bottle key={p.id} color={p.color} />)}</div></div>
       <div className="promo learn"><div><h2>Explore Natural Wellness</h2><p className="muted" style={{ marginTop: 6 }}>Guides on dilution, blending and safe everyday use.</p><Link className="btn btn-primary" href="/pages/safe-use">Read the safe-use guide</Link></div>
         <div className="promo-art" aria-hidden style={{ width: 70 }}><Sprig color="#3e7b4f" /></div></div>
