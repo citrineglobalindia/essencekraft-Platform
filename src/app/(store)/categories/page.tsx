@@ -12,10 +12,9 @@ export const metadata: Metadata = {
 export default function Categories() {
   const entries = wikiIndex.map(({ slug, title, category, subcategory, readTime, author, publishedDate }) => ({ slug, title, category, subcategory, readTime, author, publishedDate }));
   const counts: Record<string, number> = {}; entries.forEach(e => { counts[e.category] = (counts[e.category] ?? 0) + 1; });
-  const featured = ['essential-oils', 'essential-oils-for-beginners', 'how-to-dilute-essential-oils', 'how-to-use-essential-oils-safely']
-    .map(s => entries.find(e => e.slug === s)).filter((e): e is (typeof entries)[number] => !!e);
   return <>
-    <WikiDirectory entries={entries} categories={wikiCategories} counts={counts} featured={featured} />
+    <link rel="preload" as="image" href="/img/wiki/hero-botanical.webp" />
+    <WikiDirectory entries={entries} categories={wikiCategories} counts={counts} />
     {/* Crawlable index of every article (SEO-007) */}
     <nav className="wrap wiki-allindex" aria-label="All encyclopedia articles">
       <details><summary>Full A–Z index of all {entries.length} articles</summary>
