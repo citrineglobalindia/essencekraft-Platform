@@ -20,7 +20,7 @@ export function Catalog({ products, concerns, categories, lockedConcern }: { pro
   const toggle = (k: string, v: string) => { const cur = list(k); set(k, (cur.includes(v) ? cur.filter(x => x !== v) : [...cur, v]).join(',') || null); };
 
   const q = (sp.get('q') ?? '').toLowerCase().trim();
-  const cats = list('category'), cons = list('concern'), price = list('price');
+  const cats = list('category').filter(c => categories.some(x => x.slug === c)), cons = list('concern'), price = list('price');
   const inStock = sp.get('stock') === '1', offer = sp.get('offer') === '1', sort = sp.get('sort') ?? 'recommended';
 
   let items = products.filter(p => {
