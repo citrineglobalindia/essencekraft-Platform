@@ -7,7 +7,7 @@ const WaIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="curre
 const GROUPS: [string, [string, string][]][] = [
   ['Shop', [['Essential oils', '/shop?category=essential-oils'], ['Carrier oils', '/shop?category=carrier-oils'], ['Best sellers', '/shop?sort=best'], ['Offers', '/shop?offer=1']]],
   ['Help', [['Track order', '/account'], ['Shipping', '/pages/shipping'], ['Returns', '/pages/returns'], ['Contact', '/pages/contact']]],
-  ['Learn', [['Purity & testing', '/pages/purity'], ['Safe-use guide', '/pages/safe-use'], ['Our story', '/pages/about']]],
+  ['Learn', [['Purity & testing', '/pages/purity'], ['Safe-use guide', '/pages/safe-use'], ['Our story', '/about']]],
   ['Policies', [['Privacy', '/pages/privacy'], ['Terms', '/pages/terms'], ['Refunds', '/pages/refund']]],
 ];
 
