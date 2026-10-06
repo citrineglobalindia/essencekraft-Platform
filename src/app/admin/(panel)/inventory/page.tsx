@@ -2,6 +2,7 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { db, downloadCSV, fmtDate } from '@/lib/admin';
+import { PageHead } from '@/components/AdminUI';
 
 type V = { id: string; sku: string; label: string; stock: number; low_stock_threshold: number; allow_backorder: boolean; product: { name: string; status: string } };
 type M = { id: number; change: number; balance: number; reason: string; reference: string | null; note: string | null; created_at: string };
@@ -38,6 +39,7 @@ function Inventory() {
   };
 
   return <>
+    <PageHead title="Inventory" sub="Every stock change is logged with a reason. Sales and cancellations update stock automatically." />
     <div className="kpis">
       <div className="kpi"><span>SKUs</span><b>{rows.length}</b></div><div className="kpi"><span>Units on hand</span><b>{counts.units}</b></div>
       <div className="kpi"><span>Low stock</span><b style={{ color: 'var(--warn)' }}>{counts.low}</b></div><div className="kpi"><span>Out of stock</span><b style={{ color: 'var(--danger)' }}>{counts.out}</b></div>
