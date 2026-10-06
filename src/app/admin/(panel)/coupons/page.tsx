@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { db } from '@/lib/admin';
 import { inr } from '@/lib/format';
+import { PageHead } from '@/components/AdminUI';
 
 type C = { id: string; code: string; kind: 'percent' | 'flat'; value: number; min_cart: number; max_uses: number | null; used: number; ends_at: string | null; active: boolean };
 export default function Coupons() {
@@ -17,6 +18,7 @@ export default function Coupons() {
     if (error) setErr(error.message); else { setF({ ...f, code: '' }); load(); }
   };
   return <>
+    <PageHead title="Coupons" sub="Discount codes with limits, minimum cart and expiry." />
     <form className="panel form-grid" onSubmit={create}><h2>New coupon</h2>
       <div className="form-grid two">
         <div className="field"><label htmlFor="cc">Code</label><input id="cc" className="input" required value={f.code} onChange={e => setF({ ...f, code: e.target.value })} placeholder="DIWALI15" /></div>
