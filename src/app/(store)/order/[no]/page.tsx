@@ -9,7 +9,7 @@ import { track } from '@/lib/attribution';
 
 type Item = { product_name?: string; name?: string; variant_label?: string; label?: string; qty: number; unit_price?: number; price?: number };
 type Order = { order_no: string; status: string; payment_status: string; payment_method: string; total: number; subtotal: number; discount: number; shipping: number;
-  full_name: string; email: string; address: Record<string, string>; items: Item[]; created_at: string; tracking_url?: string };
+  full_name: string; email: string; address: Record<string, string>; items: Item[]; created_at: string; tracking_url?: string; referral_code?: string | null };
 const STEPS = ['placed', 'confirmed', 'packed', 'shipped', 'delivered'];
 
 export default function OrderPage({ params }: { params: { no: string } }) {
@@ -61,6 +61,12 @@ export default function OrderPage({ params }: { params: { no: string } }) {
               <span style={{ textTransform: 'capitalize' }}>{s}</span></li>)}
           </ol>
           {o.tracking_url && <a className="btn btn-ghost" style={{ marginTop: 12 }} href={o.tracking_url} target="_blank" rel="noopener">Track shipment</a>}
+        </section>}
+        {o.referral_code && o.status !== 'cancelled' && <section className="panel referral">
+          <h2>Share EssenceKraft, earn points</h2>
+          <p>Friends get a discount with your code, and you earn bonus points when their order is delivered.</p>
+          <div className="referral-row"><code>{o.referral_code}</code>
+            <a className="btn btn-primary btn-sm" href={`https://wa.me/?text=${encodeURIComponent(`I use EssenceKraft's pure essential oils. Use my code ${o.referral_code} for a discount on your first order: https://essencekraft-platform.vercel.app/shop`)}`} target="_blank" rel="noopener" data-track="referral_share">Share on WhatsApp</a></div>
         </section>}
         <section className="panel"><h2>Delivering to</h2><p>{o.full_name}<br />{o.address.line1}{o.address.line2 ? `, ${o.address.line2}` : ''}<br />{o.address.city}, {o.address.state} {o.address.pincode}</p></section>
       </div>
