@@ -50,9 +50,19 @@ function build() {
   const redirects: Row[] = [['/products', '/shop'], ['/essential-oils', '/shop?category=essential-oils'], ['/carrier-oils', '/shop?category=carrier-oils'], ['/aromatherapy', '/categories'], ['/products/9', '/product/lavender-essential-oil'], ['/pages/about', '/about']].map(([source, destination], i) => ({ id: `rd${i}`, source, destination, permanent: true, hits: Math.floor(r() * 400), created_at: new Date(now - 20 * 864e5).toISOString() }));
   const team: Row[] = [{ id: 'demo', full_name: 'Demo Admin', email: 'demo@essencekraft.in', role: 'admin' }, { id: 'u2', full_name: 'Shilpa', email: 'shilpa@essencekraft.in', role: 'admin' }, { id: 'u3', full_name: 'Warehouse', email: 'stock@essencekraft.in', role: 'inventory' }, { id: 'u4', full_name: 'Marketing', email: 'growth@essencekraft.in', role: 'marketing' }, { id: 'u5', full_name: 'Support', email: 'care@essencekraft.in', role: 'staff' }];
   const audit_log: Row[] = Array.from({ length: 30 }, (_, i) => { const o = pick(orders); const t = pick(team); const k = pick(['order.status', 'stock.adjust', 'products.update', 'coupons.update', 'settings.update']); return { id: i + 1, actor: t.id, actor_name: t.full_name, action: k, entity: k.split('.')[0], entity_id: k === 'order.status' ? o.order_no : pick(variants).sku, detail: k === 'order.status' ? { from: 'confirmed', to: 'packed' } : k === 'stock.adjust' ? { change: 12, reason: 'purchase' } : {}, created_at: new Date(now - i * 7 * 3600e3).toISOString() }; });
+  const growth = {
+    abandoned_carts: orders.slice(0, 9).map((o, i) => ({ token: `00000000-0000-4000-8000-00000000000${i}`, email: i % 3 ? o.email : null, phone: o.phone, name: o.full_name, lines: T0items(o.id), subtotal: o.subtotal, consent: i % 2 === 0, recovered_order: i < 3 ? `EK${10300 + i}` : null, reminded_at: null, reminders: 0, created_at: new Date(now - (i + 2) * 3600e3).toISOString(), updated_at: new Date(now - (i + 2) * 3600e3).toISOString() })),
+    landing_pages: [{ id: 'lp1', slug: 'sleep-better', title: 'Sleep better, naturally', status: 'published', blocks: [{ type: 'hero', heading: 'Sleep deeper, naturally', sub: 'Pure lavender & cedarwood oils.', cta: 'Shop sleep oils', href: '/concern/sleep-calm' }, { type: 'products', title: 'Our sleep picks', slugs: ['lavender-essential-oil', 'cedarwood-essential-oil', 'clary-sage-essential-oil'] }, { type: 'offer', title: '10% off your first order', code: 'WELCOME10', cta: 'Shop now', href: '/shop' }], seo_title: null, seo_description: null, views: 0, created_at: new Date(now - 5 * 864e5).toISOString(), updated_at: new Date(now - 5 * 864e5).toISOString() }],
+    campaigns: [] as Row[],
+    loyalty_ledger: orders.filter(o => o.status === 'delivered').slice(0, 25).map((o, i): Row => ({ id: i + 1, email: o.email, points: Math.floor((o.total - o.shipping) / 100), reason: 'order', order_no: o.order_no, note: null, created_at: o.created_at })),
+    referral_codes: [...new Set(orders.map(o => o.email))].slice(0, 30).map((e, i) => ({ email: e, code: `REF-${e.slice(0, 4).toUpperCase()}${1000 + i}`, created_at: new Date(now - i * 864e5).toISOString() })),
+    wiki_overrides: [] as Row[],
+    promotions: [{ id: 'pm1', kind: 'banner', title: 'Diwali Glow Sale — 15% off', body: 'On every essential oil till 10 Nov', cta: 'Shop the sale', href: '/shop?offer=1', coupon_code: 'DIWALI15', theme: 'amber', starts_at: new Date(now - 864e5).toISOString(), ends_at: new Date(now + 20 * 864e5).toISOString(), active: true, created_at: new Date(now - 864e5).toISOString() }],
+  };
+  function T0items(id: string) { return order_items.filter(x => x.order_id === id).map(x => ({ variant_id: x.variant_id, name: x.product_name, label: x.variant_label, qty: x.qty, price: x.unit_price })); }
   const stock_movements: Row[] = variants.map((v, i) => ({ id: i + 1, variant_id: v.id, change: v.stock, balance: v.stock, reason: 'initial', reference: null, note: 'Opening stock', created_at: new Date(now - 95 * 864e5).toISOString() }));
-  return { categories, concerns, products, variants, product_concerns, orders, order_items, leads, coupons, stock_movements, audit_log, reviews, redirects, profiles: team,
-    settings: [{ key: 'store', value: { free_shipping_min: 999, cod_fee: 49, shipping_flat: 79, announcement: ['Free shipping on orders above ₹999', '10% off your first order with code WELCOME10', '100% pure essential oils · GC-MS tested', 'Made in India'], support_email: 'care@essencekraft.in', whatsapp: '919000000000', gstin: '', legal_name: 'EssenceKraft', address: 'Mysuru, Karnataka', hero: { heading: 'Pure Essential Oils for a Healthier You', subheading: 'Discover natural solutions for wellness, beauty and everyday living.', cta: 'Shop Essential Oils', href: '/shop?category=essential-oils' }, sections: { concerns: true, bestsellers: true, promos: true, new_arrivals: true, newsletter: true } } }] };
+  return { categories, concerns, products, variants, product_concerns, orders, order_items, leads, coupons, stock_movements, audit_log, reviews, redirects, profiles: team, ...growth,
+    settings: [{ key: 'loyalty', value: { enabled: true, earn_per_100: 1, point_value: 0.5, referral_bonus: 100, referral_discount: 10, min_redeem: 100 } }, { key: 'store', value: { free_shipping_min: 999, cod_fee: 49, shipping_flat: 79, announcement: ['Free shipping on orders above ₹999', '10% off your first order with code WELCOME10', '100% pure essential oils · GC-MS tested', 'Made in India'], support_email: 'care@essencekraft.in', whatsapp: '919000000000', gstin: '', legal_name: 'EssenceKraft', address: 'Mysuru, Karnataka', hero: { heading: 'Pure Essential Oils for a Healthier You', subheading: 'Discover natural solutions for wellness, beauty and everyday living.', cta: 'Shop Essential Oils', href: '/shop?category=essential-oils' }, sections: { concerns: true, bestsellers: true, promos: true, new_arrivals: true, newsletter: true } } }] };
 }
 const T = build();
 type TName = keyof typeof T;
@@ -74,6 +84,7 @@ class Query implements PromiseLike<{ data: any; error: any; count?: number }> { 
   neq(k: string, v: unknown) { this.f.push(x => x[k] !== v); return this; }
   gte(k: string, v: string) { this.f.push(x => x[k] >= v); return this; }
   lte(k: string, v: string) { this.f.push(x => x[k] <= v); return this; }
+  like(k: string, pat: string) { const re = new RegExp('^' + pat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*') + '$'); this.f.push(x => re.test(String(x[k] ?? ''))); return this; }
   in(k: string, v: unknown[]) { this.f.push(x => v.includes(x[k])); return this; }
   order(k: string, o?: { ascending?: boolean }) { this.ord = [k, o?.ascending !== false]; return this; }
   limit(n: number) { this.lim = n; return this; }
@@ -113,6 +124,13 @@ function rpc(fn: string, a: Row) {
     if (['cancelled', 'returned'].includes(a.p_status) && !['cancelled', 'returned'].includes(o.status))
       T.order_items.filter(i => i.order_id === o.id).forEach(i => { const v = T.variants.find(x => x.id === i.variant_id); if (v) { v.stock += i.qty; T.stock_movements.push({ id: T.stock_movements.length + 1, variant_id: v.id, change: i.qty, balance: v.stock, reason: a.p_status === 'cancelled' ? 'cancel' : 'return', reference: o.order_no, note: null, created_at: new Date().toISOString() }); } });
     o.status = a.p_status; if (a.p_tracking) o.tracking_url = a.p_tracking; return { data: null, error: null };
+  }
+  if (fn === 'redeem_points') {
+    const bal = T.loyalty_ledger.filter(x => x.email === a.p_email).reduce((s, x) => s + x.points, 0);
+    if (a.p_points < 100) return { data: null, error: { message: 'Minimum redemption is 100 points' } };
+    if (a.p_points > bal) return { data: null, error: { message: `Only ${bal} points available` } };
+    const code = `PTS-${Math.random().toString(36).slice(2, 8).toUpperCase()}`; T.coupons.push({ id: code, code, kind: 'flat', value: Math.round(a.p_points * .5), min_cart: 0, max_uses: 1, used: 0, ends_at: null, active: true });
+    T.loyalty_ledger.unshift({ id: Date.now(), email: a.p_email, points: -a.p_points, reason: 'redeem', order_no: null, note: code, created_at: new Date().toISOString() }); return { data: code, error: null };
   }
   return { data: null, error: { message: `${fn} needs Supabase` } };
 }
