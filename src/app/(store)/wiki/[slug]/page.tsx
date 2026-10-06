@@ -88,6 +88,7 @@ export default async function WikiArticle({ params }: { params: { slug: string }
 
         <section className="wiki-sec plain"><h2>Related Encyclopedia Topics</h2><p className="muted">Explore interconnected botanical studies and practical guides in our knowledge base:</p>
           <div className="wiki-grid">{rel.map(r => <Link key={r.slug} href={`/wiki/${r.slug}`} className="wiki-card"><span className="wiki-tag">{r.category}</span><h3>{r.title}</h3><div className="wiki-card-foot"><span>{r.publishedDate}</span><b>Read →</b></div></Link>)}</div></section>
+        <p className="pg-note" style={{ maxWidth: 'none', marginTop: 24 }}>This article is for general wellness and cosmetic information only. It is not medical advice and is not intended to diagnose, treat, cure or prevent any disease. Always dilute essential oils, patch-test first, and consult a qualified practitioner if you are pregnant, nursing, have a medical condition or take medication.</p>
       </div>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
     </article>
