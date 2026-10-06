@@ -12,7 +12,7 @@ export default function Encyclopedia() {
   const [sel, setSel] = useState<string | null>(null); const [title, setTitle] = useState(''); const [fields, setFields] = useState<Record<string, string>>({}); const [orig, setOrig] = useState<Record<string, string>>({});
   const [claim, setClaim] = useState('pending'); const [msg, setMsg] = useState<{ t: 'ok' | 'error'; m: string } | null>(null);
   const loadOv = () => db().from('wiki_overrides').select('*').order('updated_at', { ascending: false }).then(({ data }) => setOvs((data ?? []) as Ov[]));
-  useEffect(() => { fetch('/api/wiki').then(r => r.json()).then(setIdx); loadOv(); }, []);
+  useEffect(() => { fetch('/api/wiki').then(r => r.json()).then(setIdx); loadOv(); const s = new URLSearchParams(window.location.search).get('slug'); if (s) setTimeout(() => open(s), 300); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
   const cats = useMemo(() => [...new Set(idx.map(i => i.category))], [idx]);
   const list = idx.filter(i => (!cat || i.category === cat) && i.title.toLowerCase().includes(q.toLowerCase())).slice(0, 60);
   const open = async (slug: string) => { setMsg(null); setSel(slug);
