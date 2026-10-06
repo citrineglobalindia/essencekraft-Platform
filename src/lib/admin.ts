@@ -1,6 +1,10 @@
 'use client';
-import { browserClient } from './supabase';
-export const db = () => browserClient();
+import { browserClient, hasSupabase } from './supabase';
+import { demoClient } from './adminDemo';
+// Real Supabase when configured; otherwise an in-browser demo dataset so the admin can be previewed.
+type Client = ReturnType<typeof browserClient>;
+export const db = (): Client => (hasSupabase ? browserClient() : (demoClient as unknown as Client));
+export const isDemo = !hasSupabase;
 
 export function downloadCSV(name: string, rows: Record<string, unknown>[]) {
   if (!rows.length) return;
