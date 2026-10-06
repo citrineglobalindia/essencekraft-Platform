@@ -22,6 +22,18 @@ export default function Checkout() {
   const [busy, setBusy] = useState(false); const [fail, setFail] = useState('');
   const [fees, setFees] = useState({ free_shipping_min: 999, shipping_flat: SHIPPING_FLAT, cod_fee: COD_FEE });
   useEffect(() => { fetch('/api/settings').then(r => r.json()).then(setFees).catch(() => {}); }, []);
+  // Abandoned-cart capture: once a valid email or mobile is entered, keep the cart recoverable.
+  useEffect(() => {
+    if (!hasSupabase || !lines.length) return;
+    const okEmail = /^\S+@\S+\.\S+$/.test(f.email), okPhone = /^[6-9]\d{9}$/.test(f.phone.replace(/^\+?91/, ''));
+    if (!okEmail && !okPhone) return;
+    const t = setTimeout(() => {
+      let token = ''; try { token = localStorage.getItem('ek_cart_token') || crypto.randomUUID(); localStorage.setItem('ek_cart_token', token); } catch { return; }
+      browserClient().rpc('save_cart', { p_token: token, p_email: okEmail ? f.email : null, p_phone: okPhone ? f.phone.replace(/^\+?91/, '') : null, p_name: f.full_name || null,
+        p_lines: lines.map(l => ({ variant_id: l.variant_id, product_slug: l.product_slug, name: l.name, label: l.label, price: l.price, qty: l.qty, color: l.color })), p_subtotal: subtotal, p_consent: consent }).then(() => {}, () => {});
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [f.email, f.phone, f.full_name, lines, subtotal, consent]);
 
   useEffect(() => { if (lines.length) track('begin_checkout', { currency: 'INR', value: subtotal, items: lines.map(l => ({ item_id: l.variant_id, item_name: l.name, item_variant: l.label, price: l.price, quantity: l.qty })) }); /* eslint-disable-next-line */ }, []);
 
@@ -72,7 +84,7 @@ export default function Checkout() {
         if (error) throw new Error(error.message);
         ({ order_no, token } = data);
       }
-      clear();
+      clear(); try { localStorage.removeItem('ek_cart_token'); } catch {}
       if (method === 'razorpay' && hasSupabase) {
         const paid = await payOrder(order_no, token).catch(() => false);
         router.push(`/order/${order_no}?t=${token}${paid ? '' : '&retry=1'}`);
@@ -94,6 +106,7 @@ export default function Checkout() {
             {F('email', 'Email', { type: 'email', autoComplete: 'email' })}
             {F('phone', 'Mobile number', { type: 'tel', inputMode: 'numeric', autoComplete: 'tel-national', maxLength: 13 })}
             <label className="check span2"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />Send me offers and new-launch updates by email and WhatsApp (optional)</label>
+            <p className="muted span2" style={{ fontSize: 12 }}>We save your cart with these details so you can pick up where you left off, and may send one reminder if you don&apos;t finish checking out.</p>
           </div></section>
         <section className="panel"><h2>Delivery address</h2>
           <div className="form-grid two">
