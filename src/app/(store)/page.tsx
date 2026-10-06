@@ -1,12 +1,15 @@
 import Link from 'next/link';
 import { getConcerns, getProducts, getSettings } from '@/lib/data';
+import { getPromotions } from '@/lib/growth';
+import { PromoBanner } from '@/components/PromoBanner';
 import { ProductCard } from '@/components/ProductCard';
 import { Hero } from '@/components/Hero';
 import { LeadForm } from '@/components/LeadForm';
 import { Bottle, Sprig } from '@/components/Bottle';
 
 export default async function Home() {
-  const [products, concerns, settings] = await Promise.all([getProducts(), getConcerns(), getSettings()]);
+  const [products, concerns, settings, promos] = await Promise.all([getProducts(), getConcerns(), getSettings(), getPromotions()]);
+  const banner = promos.find(x => x.kind === 'banner');
   const on = (k: string) => settings.sections[k] !== false;
   const best = products.filter(p => p.is_bestseller).slice(0, 4);
   const fresh = [...products].filter(p => p.is_new).sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? '')).slice(0, 4);
@@ -18,6 +21,7 @@ export default async function Home() {
   ];
   return <>
     <Hero slides={slides} />
+    {banner && <PromoBanner p={banner} />}
 
     {on('concerns') && <section className="section wrap" aria-labelledby="concern-h">
       <div className="section-head"><div><h2 id="concern-h">Shop by Concern</h2><p className="muted">Solutions for your everyday wellness goals.</p></div><Link className="btn btn-ghost btn-pill" href="/shop">View all</Link></div>
