@@ -9,7 +9,6 @@ import { getAttribution, track } from '@/lib/attribution';
 import { payOrder } from '@/lib/pay';
 
 const STATES = ['Andaman and Nicobar Islands','Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chandigarh','Chhattisgarh','Dadra and Nagar Haveli and Daman and Diu','Delhi','Goa','Gujarat','Haryana','Himachal Pradesh','Jammu and Kashmir','Jharkhand','Karnataka','Kerala','Ladakh','Lakshadweep','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Puducherry','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
-const FREE_SHIP = 999;
 type Coupon = { code: string; kind: 'percent' | 'flat'; value: number };
 
 export default function Checkout() {
@@ -21,14 +20,16 @@ export default function Checkout() {
   const [code, setCode] = useState(''); const [coupon, setCoupon] = useState<Coupon | null>(null); const [couponMsg, setCouponMsg] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false); const [fail, setFail] = useState('');
+  const [fees, setFees] = useState({ free_shipping_min: 999, shipping_flat: SHIPPING_FLAT, cod_fee: COD_FEE });
+  useEffect(() => { fetch('/api/settings').then(r => r.json()).then(setFees).catch(() => {}); }, []);
 
   useEffect(() => { if (lines.length) track('begin_checkout', { currency: 'INR', value: subtotal, items: lines.map(l => ({ item_id: l.variant_id, item_name: l.name, item_variant: l.label, price: l.price, quantity: l.qty })) }); /* eslint-disable-next-line */ }, []);
 
   const t = useMemo(() => {
     const discount = coupon ? (coupon.kind === 'percent' ? Math.round(subtotal * coupon.value) / 100 : Math.min(coupon.value, subtotal)) : 0;
-    const shipping = (subtotal - discount >= FREE_SHIP ? 0 : SHIPPING_FLAT) + (method === 'cod' ? COD_FEE : 0);
+    const shipping = (subtotal - discount >= fees.free_shipping_min ? 0 : fees.shipping_flat) + (method === 'cod' ? fees.cod_fee : 0);
     return { discount, shipping, total: subtotal - discount + shipping };
-  }, [subtotal, coupon, method]);
+  }, [subtotal, coupon, method, fees]);
 
   const upd = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF(s => ({ ...s, [k]: e.target.value }));
   const validate = () => {
@@ -107,7 +108,7 @@ export default function Checkout() {
         <section className="panel"><h2>Payment</h2>
           <div style={{ display: 'grid', gap: 10 }}>
             <label className="pay-opt"><input type="radio" name="pm" checked={method === 'razorpay'} onChange={() => setMethod('razorpay')} /><span><b>UPI, cards, net banking, wallets</b><br /><small className="muted">Secured by Razorpay. We never see your card details.</small></span></label>
-            <label className="pay-opt"><input type="radio" name="pm" checked={method === 'cod'} onChange={() => setMethod('cod')} /><span><b>Cash on delivery</b><br /><small className="muted">{inr(COD_FEE)} handling fee</small></span></label>
+            <label className="pay-opt"><input type="radio" name="pm" checked={method === 'cod'} onChange={() => setMethod('cod')} /><span><b>Cash on delivery</b><br /><small className="muted">{fees.cod_fee ? `${inr(fees.cod_fee)} handling fee` : 'No extra fee'}</small></span></label>
           </div></section>
       </div>
       <aside style={{ alignSelf: 'start', position: 'sticky', top: 90 }}>
