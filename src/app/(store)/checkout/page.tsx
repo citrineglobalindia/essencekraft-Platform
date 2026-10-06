@@ -7,6 +7,7 @@ import { COD_FEE, SHIPPING_FLAT, inr } from '@/lib/format';
 import { hasSupabase, browserClient } from '@/lib/supabase';
 import { getAttribution, track } from '@/lib/attribution';
 import { payOrder } from '@/lib/pay';
+import { useUser } from '@/lib/account';
 
 const STATES = ['Andaman and Nicobar Islands','Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chandigarh','Chhattisgarh','Dadra and Nagar Haveli and Daman and Diu','Delhi','Goa','Gujarat','Haryana','Himachal Pradesh','Jammu and Kashmir','Jharkhand','Karnataka','Kerala','Ladakh','Lakshadweep','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Puducherry','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
 type Coupon = { code: string; kind: 'percent' | 'flat'; value: number };
@@ -21,6 +22,14 @@ export default function Checkout() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false); const [fail, setFail] = useState('');
   const [fees, setFees] = useState({ free_shipping_min: 999, shipping_flat: SHIPPING_FLAT, cod_fee: COD_FEE });
+  // Signed-in shoppers: prefill from their profile and saved addresses
+  const user = useUser(); const [saved, setSaved] = useState<{ id: string; label: string; full_name: string; phone: string; line1: string; line2: string | null; city: string; state: string; pincode: string; is_default: boolean }[]>([]); const [saveAddr, setSaveAddr] = useState(true);
+  useEffect(() => {
+    if (!user || !hasSupabase) return; const c = browserClient();
+    setF(x => ({ ...x, email: x.email || user.email }));
+    c.from('addresses').select('*').order('is_default', { ascending: false }).then(({ data }) => { const a = data ?? []; setSaved(a); if (a[0]) { const d = a[0]; setF(x => ({ ...x, full_name: x.full_name || d.full_name, phone: x.phone || d.phone, line1: x.line1 || d.line1, line2: x.line2 || (d.line2 ?? ''), city: x.city || d.city, state: d.state, pincode: x.pincode || d.pincode })); } });
+    c.from('profiles').select('full_name,phone').eq('id', user.id).maybeSingle().then(({ data }) => data && setF(x => ({ ...x, full_name: x.full_name || (data.full_name ?? ''), phone: x.phone || (data.phone ?? '') })));
+  }, [user]);
   useEffect(() => { fetch('/api/settings').then(r => r.json()).then(setFees).catch(() => {}); }, []);
   // Abandoned-cart capture: once a valid email or mobile is entered, keep the cart recoverable.
   useEffect(() => {
@@ -83,6 +92,8 @@ export default function Checkout() {
         const { data, error } = await browserClient().rpc('place_order', { payload });
         if (error) throw new Error(error.message);
         ({ order_no, token } = data);
+        if (user && saveAddr && !saved.some(a => a.line1.trim().toLowerCase() === f.line1.trim().toLowerCase() && a.pincode === f.pincode))
+          await browserClient().from('addresses').insert({ label: saved.length ? 'Address' : 'Home', full_name: f.full_name, phone: f.phone.replace(/\D/g, '').slice(-10), line1: f.line1, line2: f.line2 || null, city: f.city, state: f.state, pincode: f.pincode, is_default: !saved.length }).then(() => {}, () => {});
       }
       clear(); try { localStorage.removeItem('ek_cart_token'); } catch {}
       if (method === 'razorpay' && hasSupabase) {
@@ -101,6 +112,7 @@ export default function Checkout() {
   return (
     <div className="wrap checkout">
       <div>
+        {user === null && hasSupabase && <p className="notice" style={{ marginBottom: 12 }}>Have an account? <Link className="link" href="/account?next=/checkout">Sign in</Link> for saved addresses and order history — or continue as a guest.</p>}
         <section className="panel"><h2>Contact</h2>
           <div className="form-grid two">
             {F('email', 'Email', { type: 'email', autoComplete: 'email' })}
@@ -109,6 +121,7 @@ export default function Checkout() {
             <p className="muted span2" style={{ fontSize: 12 }}>We save your cart with these details so you can pick up where you left off, and may send one reminder if you don&apos;t finish checking out.</p>
           </div></section>
         <section className="panel"><h2>Delivery address</h2>
+          {saved.length > 1 && <div className="adm-chips" style={{ marginBottom: 12 }}>{saved.map(a => <button type="button" key={a.id} className={`adm-chip${f.line1 === a.line1 && f.pincode === a.pincode ? ' on' : ''}`} onClick={() => setF(x => ({ ...x, full_name: a.full_name, phone: a.phone, line1: a.line1, line2: a.line2 ?? '', city: a.city, state: a.state, pincode: a.pincode }))}>{a.label}: {a.line1.slice(0, 24)}…</button>)}</div>}
           <div className="form-grid two">
             {F('full_name', 'Full name', { autoComplete: 'name' }, 'span2')}
             {F('line1', 'House no., building, street', { autoComplete: 'address-line1' }, 'span2')}
@@ -117,6 +130,7 @@ export default function Checkout() {
             {F('pincode', 'Pincode', { inputMode: 'numeric', maxLength: 6, autoComplete: 'postal-code' })}
             {F('city', 'City', { autoComplete: 'address-level2' })}
             <div className="field span2"><label htmlFor="state">State</label><select id="state" className="select" value={f.state} onChange={upd('state')}>{STATES.map(s => <option key={s}>{s}</option>)}</select></div>
+            {user && <label className="check span2"><input type="checkbox" checked={saveAddr} onChange={e => setSaveAddr(e.target.checked)} />Save this address to my account</label>}
           </div></section>
         <section className="panel"><h2>Payment</h2>
           <div style={{ display: 'grid', gap: 10 }}>
