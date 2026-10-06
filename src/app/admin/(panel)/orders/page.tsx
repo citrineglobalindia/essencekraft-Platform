@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { db, downloadCSV, fmtDate, statusTone } from '@/lib/admin';
 import { inr } from '@/lib/format';
+import { PageHead, Stats } from '@/components/AdminUI';
 
 type O = { id: string; order_no: string; full_name: string; email: string; phone: string; total: number; status: string; payment_status: string; payment_method: string; created_at: string; address: { city: string; pincode: string }; coupon_code: string | null; first_touch: Record<string, string> | null; last_touch: Record<string, string> | null };
 const STATUSES = ['placed', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled', 'returned'];
@@ -18,7 +19,11 @@ function Orders() {
     query.then(({ data }) => setRows((data ?? []) as O[]));
   }, [status, pay]);
   const list = rows.filter(o => !q || `${o.order_no} ${o.full_name} ${o.email} ${o.phone}`.toLowerCase().includes(q.toLowerCase()));
+  const toShip = rows.filter(o => ['placed', 'confirmed', 'packed'].includes(o.status)).length;
+  const codDue = rows.filter(o => o.payment_method === 'cod' && o.payment_status !== 'paid' && o.status !== 'cancelled').reduce((s, o) => s + Number(o.total), 0);
   return <>
+    <PageHead title="Orders" sub="Fulfil, track and refund. Cancelling or returning restocks automatically." />
+    <Stats items={[['To fulfil', toShip, toShip ? 'amber' : ''], ['Shipped', rows.filter(o => o.status === 'shipped').length], ['COD to collect', inr(codDue)], ['Showing', list.length]]} />
     <div className="admin-bar">
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input className="input" placeholder="Order no., name, phone, email" value={q} onChange={e => setQ(e.target.value)} aria-label="Search orders" />
