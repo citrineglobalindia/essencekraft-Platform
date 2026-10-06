@@ -1,14 +1,16 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { db, downloadCSV, fmtDate, statusTone } from '@/lib/admin';
 import { inr } from '@/lib/format';
 
 type O = { id: string; order_no: string; full_name: string; email: string; phone: string; total: number; status: string; payment_status: string; payment_method: string; created_at: string; address: { city: string; pincode: string }; coupon_code: string | null; first_touch: Record<string, string> | null; last_touch: Record<string, string> | null };
 const STATUSES = ['placed', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled', 'returned'];
 
-export default function Orders() {
-  const [rows, setRows] = useState<O[]>([]); const [q, setQ] = useState(''); const [status, setStatus] = useState('all'); const [pay, setPay] = useState('all');
+function Orders() {
+  const sp = useSearchParams();
+  const [rows, setRows] = useState<O[]>([]); const [q, setQ] = useState(sp.get('q') ?? ''); const [status, setStatus] = useState('all'); const [pay, setPay] = useState('all');
   useEffect(() => {
     let query = db().from('orders').select('id,order_no,full_name,email,phone,total,status,payment_status,payment_method,created_at,address,coupon_code,first_touch,last_touch').order('created_at', { ascending: false }).limit(500);
     if (status !== 'all') query = query.eq('status', status);
@@ -37,3 +39,5 @@ export default function Orders() {
     </table></div>
   </>;
 }
+
+export default function Page() { return <Suspense><Orders /></Suspense>; }
