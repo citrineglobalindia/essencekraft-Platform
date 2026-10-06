@@ -23,7 +23,7 @@ export default function Settings() {
       <section className="adm-card form-grid"><div className="adm-card-h"><div><h3>Shipping & payments</h3><p>Used at checkout.</p></div></div>
         <div className="form-grid two">{N('free_shipping_min', 'Free shipping above (₹)')}{N('shipping_flat', 'Flat shipping fee (₹)')}{N('cod_fee', 'COD handling fee (₹)', 'Set 0 to waive')}</div></section>
       <section className="adm-card form-grid"><div className="adm-card-h"><div><h3>Business details</h3><p>Shown on tax invoices and the contact page.</p></div></div>
-        <div className="form-grid two">{T('legal_name', 'Legal name')}{T('gstin', 'GSTIN', '29ABCDE1234F1Z5')}{T('support_email', 'Support email', 'care@essencekraft.in')}{T('whatsapp', 'WhatsApp number', '9190000 00000')}</div>{T('address', 'Registered address')}</section>
+        <div className="form-grid two">{T('legal_name', 'Legal name')}{T('gstin', 'GSTIN', '29ABCDE1234F1Z5')}{T('support_email', 'Support email', 'hello@essencekraft.in')}{T('whatsapp', 'WhatsApp number', '9190000 00000')}</div>{T('address', 'Registered address')}</section>
       <section className="adm-card adm-span"><div className="adm-card-h"><div><h3>Integrations</h3><p>Keys are added in Vercel → Settings → Environment Variables, never here.</p></div></div>
         <div className="table-wrap"><table><tbody>
           <tr><td><b>Supabase</b> — database, login, storage</td><td>{ok(!isDemo)}</td></tr>
