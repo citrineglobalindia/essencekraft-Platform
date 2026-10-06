@@ -50,8 +50,9 @@ export function MobileMenu({ open, onClose, nav }: { open: boolean; onClose: () 
           <Link href="/wishlist"><span style={{ display: 'flex', gap: 10, alignItems: 'center' }}><HeartIcon size={18} />Wishlist</span><span aria-hidden>›</span></Link>
           <Link href="/account">Track your order <span aria-hidden>›</span></Link>
           <Link href="/categories">Botanical Encyclopedia <span aria-hidden>›</span></Link>
-          <Link href="/pages/safe-use">Safe-use guide <span aria-hidden>›</span></Link>
-          <Link href="/pages/contact">Contact us <span aria-hidden>›</span></Link>
+          <Link href="/learn">Guides &amp; resources <span aria-hidden>›</span></Link>
+          <Link href="/faq">FAQ <span aria-hidden>›</span></Link>
+          <Link href="/contact">Contact us <span aria-hidden>›</span></Link>
         </div>
       </div>
       <div className="drawer-foot">
