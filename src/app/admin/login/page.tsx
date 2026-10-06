@@ -7,7 +7,7 @@ function Login() {
   const sp = useSearchParams(); const router = useRouter();
   const [err, setErr] = useState(sp.get('denied') ? 'This account does not have admin access.' : '');
   const [busy, setBusy] = useState(false); const [sent, setSent] = useState(false);
-  if (!hasSupabase) return <div className="panel"><h1 style={{ fontSize: '1.6rem' }}>Connect Supabase first</h1><p>Set <code>NEXT_PUBLIC_SUPABASE_URL</code> and <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>, run the migration, then sign in here.</p></div>;
+  if (!hasSupabase) return <div className="panel"><span className="logo"><b>EssenceKraft</b><small>ADMIN</small></span><h1 style={{ fontSize: '1.4rem' }}>Demo admin</h1><p className="muted">Supabase isn&apos;t connected yet, so the admin runs on sample data. Real sign-in turns on automatically once it&apos;s connected.</p><a className="btn btn-primary" href="/admin">Open demo admin</a></div>;
   return (
     <form className="panel" onSubmit={async e => {
       e.preventDefault(); setErr(''); setBusy(true);
