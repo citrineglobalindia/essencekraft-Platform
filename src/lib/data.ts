@@ -42,8 +42,9 @@ export const getCategories = cache(async (): Promise<Category[]> => {
   return data ?? [];
 });
 
-export const getSettings = cache(async (): Promise<{ free_shipping_min: number; announcement: string[] }> => {
-  const fallback = { free_shipping_min: 999, announcement: ['Free shipping on orders above ₹999', '10% off your first order with code WELCOME10', '100% pure essential oils · GC-MS tested', 'Made in India'] };
+export type StoreSettings = { free_shipping_min: number; shipping_flat: number; cod_fee: number; announcement: string[]; hero?: { heading: string; subheading: string; cta: string; href: string }; sections: Record<string, boolean> };
+export const getSettings = cache(async (): Promise<StoreSettings> => {
+  const fallback: StoreSettings = { free_shipping_min: 999, shipping_flat: 79, cod_fee: 49, announcement: ['Free shipping on orders above ₹999', '10% off your first order with code WELCOME10', '100% pure essential oils · GC-MS tested', 'Made in India'], sections: {} };
   if (!hasSupabase) return fallback;
   const { data } = await publicClient().from('settings').select('value').eq('key', 'store').maybeSingle();
   return { ...fallback, ...(data?.value ?? {}) };
