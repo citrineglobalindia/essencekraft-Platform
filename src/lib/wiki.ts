@@ -44,8 +44,8 @@ function oilName(title: string) {
   return 'Essential Oil';
 }
 
-export function buildArticle(e: WikiEntry) {
-  const i = e.title, t = e.category, h = bodies[e.slug] || {}, u = oilName(i);
+export function buildArticle(e: WikiEntry, ov?: { title: string | null; fields: Record<string, unknown> }) {
+  const i = ov?.title || e.title, t = e.category, h: Body = { ...(bodies[e.slug] || {}), ...((ov?.fields ?? {}) as Body) }, u = oilName(i);
   const title = (() => { let x = i.replace(/\s*\|\s*EssenceKraft/g, '').trim(); if (x.length > 42) x = x.substring(0, 40).trim() + '..'; else if (x.length < 18) x = `${x} Essential Oil Guide`; return `${x} | EssenceKraft`; })();
   const description = (() => { const x = h.overview ? `${i}: ${h.overview.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()}` : `${i}: Clinical research guide on ${i.toLowerCase()} in ${t.toLowerCase()} with dilution safety by EssenceKraft Research Lab.`; return x.length > 155 ? x.substring(0, 152).trim() + '...' : x; })();
   return {
