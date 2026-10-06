@@ -2,17 +2,19 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { buildArticle, getEntry, getRefs, related, wikiIndex, productSlugFor } from '@/lib/wiki';
+import { getWikiOverrides } from '@/lib/growth';
 import { getProducts } from '@/lib/data';
 import { inr, SITE_URL } from '@/lib/format';
 import { Bottle } from '@/components/Bottle';
 import { FlaskIcon } from '@/components/Icons';
 
 export const dynamicParams = false;
+export const revalidate = 300; // picks up encyclopedia edits published from admin
 export function generateStaticParams() { return wikiIndex.map(e => ({ slug: e.slug })); }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const e = getEntry(params.slug); if (!e) return {};
-  const a = buildArticle(e);
+  const a = buildArticle(e, (await getWikiOverrides())[e.slug]);
   return { title: { absolute: a.meta.title }, description: a.meta.description, alternates: { canonical: `/wiki/${e.slug}` },
     openGraph: { type: 'article', title: e.title, description: a.meta.description } };
 }
@@ -21,7 +23,8 @@ const H = ({ html, className }: { html: string; className?: string }) => <div cl
 
 export default async function WikiArticle({ params }: { params: { slug: string } }) {
   const e = getEntry(params.slug); if (!e) notFound();
-  const a = buildArticle(e); const refs = getRefs(e.slug); const rel = related(e.slug, 6);
+  const ov = (await getWikiOverrides())[e.slug];
+  const a = buildArticle(e, ov); const refs = getRefs(e.slug); const rel = related(e.slug, 6);
   const products = await getProducts();
   const pslug = e.product ? productSlugFor(e.product.name) : null;
   const shopP = pslug ? products.find(p => p.slug === pslug) : undefined;
@@ -36,7 +39,7 @@ export default async function WikiArticle({ params }: { params: { slug: string }
         <div className="wrap wiki-narrow">
           <nav className="crumbs" aria-label="Breadcrumb"><Link href="/">Home</Link><span aria-hidden>/</span><Link href="/categories">Encyclopedia</Link><span aria-hidden>/</span><span>{e.category}</span><span aria-hidden>/</span><span aria-current="page">{e.subcategory}</span></nav>
           <span className="wiki-tag big"><FlaskIcon size={13} />{e.category} • {e.subcategory}</span>
-          <h1>{e.title}</h1>
+          <h1>{ov?.title || e.title}</h1>
           <div className="wiki-byline">
             <div className="wiki-byline-l">
               <span className="wiki-logo" aria-hidden>ek</span>
