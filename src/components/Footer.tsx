@@ -6,9 +6,9 @@ const WaIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="curre
 
 const GROUPS: [string, [string, string][]][] = [
   ['Shop', [['Essential oils', '/shop?category=essential-oils'], ['Carrier oils', '/shop?category=carrier-oils'], ['Best sellers', '/shop?sort=best'], ['Offers', '/shop?offer=1']]],
-  ['Help', [['Track order', '/account'], ['Shipping', '/pages/shipping'], ['Returns', '/pages/returns'], ['Contact', '/pages/contact']]],
-  ['Learn', [['Botanical Encyclopedia', '/categories'], ['Purity & testing', '/pages/purity'], ['Safe-use guide', '/pages/safe-use'], ['Our story', '/about']]],
-  ['Policies', [['Privacy', '/pages/privacy'], ['Terms', '/pages/terms'], ['Refunds', '/pages/refund']]],
+  ['Help', [['Track order', '/account'], ['FAQ', '/faq'], ['Shipping & returns', '/shipping'], ['Contact', '/contact']]],
+  ['Learn', [['Guides & resources', '/learn'], ['Botanical Encyclopedia', '/categories'], ['Beginner’s guide', '/learn/beginners-guide'], ['Our story', '/about']]],
+  ['Policies', [['Privacy', '/privacy'], ['Terms', '/terms'], ['Shipping & returns', '/shipping']]],
 ];
 
 export function Footer() {
@@ -21,7 +21,7 @@ export function Footer() {
             <p>Pure essential and carrier oils, bottled in India.</p>
             <div className="footer-cta">
               <a className="btn btn-pill footer-wa" aria-label="Chat on WhatsApp" href={`https://wa.me/${WHATSAPP}`} target="_blank" rel="noopener" data-track="whatsapp_click"><WaIcon /><span>Chat on WhatsApp</span></a>
-              <a className="footer-mail" href="mailto:care@essencekraft.in">care@essencekraft.in</a>
+              <a className="footer-mail" href="mailto:hello@essencekraft.in">hello@essencekraft.in</a>
             </div>
           </div>
           <nav className="footer-links" aria-label="Footer">
