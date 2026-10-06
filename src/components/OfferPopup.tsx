@@ -8,7 +8,7 @@ import { Bottle } from './Bottle';
 
 const KEY = 'ek_offer_seen';
 const DELAY = 2000;
-const CODE = 'WELCOME10';
+const DEFAULT = { title: '10% off your first order', body: 'Join for safe-use guides, blending tips and early access to new oils.', code: 'WELCOME10' };
 const BLOCKED = ['/checkout', '/cart', '/order', '/admin', '/account'];
 
 // First-visit offer (HOME-011 / LEAD-004): shows once per browser, 2s after landing,
@@ -22,6 +22,9 @@ export function OfferPopup() {
   const [err, setErr] = useState('');
   const [copied, setCopied] = useState(false);
   const closeBtn = useRef<HTMLButtonElement>(null);
+  const [cfg, setCfg] = useState(DEFAULT);
+  useEffect(() => { fetch('/api/promotions').then(r => r.json()).then(d => d.popup && setCfg({ title: d.popup.title, body: d.popup.body ?? DEFAULT.body, code: d.popup.coupon_code ?? DEFAULT.code })).catch(() => {}); }, []);
+  const CODE = cfg.code;
 
   useEffect(() => {
     if (BLOCKED.some(b => path.startsWith(b))) return;
@@ -53,9 +56,9 @@ export function OfferPopup() {
         <div className="offer-art" aria-hidden><Bottle color="#7a5a9e" label="Lavender Essential Oil" /><Bottle color="#3f6b3a" label="Rosemary Essential Oil" /></div>
         <div className="offer-body">
           <span className="hero-eyebrow">WELCOME OFFER</span>
-          <h2 id="offer-h">10% off your first order</h2>
+          <h2 id="offer-h">{cfg.title}</h2>
           {step === 'form' ? <>
-            <p className="muted">Join for safe-use guides, blending tips and early access to new oils.</p>
+            <p className="muted">{cfg.body}</p>
             <form onSubmit={async e => {
               e.preventDefault(); setErr('');
               const f = new FormData(e.currentTarget);
@@ -64,7 +67,7 @@ export function OfferPopup() {
               if (phone && !/^[6-9]\d{9}$/.test(phone)) return setErr('Enter a valid 10-digit mobile number.');
               setBusy(true);
               try { await submitLead({ source: 'welcome_popup', email: email || undefined, phone: phone || undefined, consent }); setStep('done'); }
-              catch { setErr('Something went wrong. Your code is WELCOME10.'); setStep('done'); }
+              catch { setErr(`Something went wrong. Your code is ${CODE}.`); setStep('done'); }
               setBusy(false);
             }} className="offer-form">
               <label className="sr" htmlFor="of-email">Email</label>
