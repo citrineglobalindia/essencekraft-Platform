@@ -9,7 +9,8 @@ import { track } from '@/lib/attribution';
 
 type Item = { product_name?: string; name?: string; variant_label?: string; label?: string; qty: number; unit_price?: number; price?: number };
 type Order = { order_no: string; status: string; payment_status: string; payment_method: string; total: number; subtotal: number; discount: number; shipping: number;
-  full_name: string; email: string; address: Record<string, string>; items: Item[]; created_at: string; tracking_url?: string; referral_code?: string | null };
+  full_name: string; email: string; address: Record<string, string>; items: Item[]; created_at: string; tracking_url?: string; referral_code?: string | null;
+  courier?: string | null; awb?: string | null; expected_delivery?: string | null; invoice_no?: string | null; events?: { status: string; note: string | null; at: string }[] };
 const STEPS = ['placed', 'confirmed', 'packed', 'shipped', 'delivered'];
 
 export default function OrderPage({ params }: { params: { no: string } }) {
@@ -54,14 +55,18 @@ export default function OrderPage({ params }: { params: { no: string } }) {
             <p style={{ marginTop: 8 }}>Order <b>{o.order_no}</b> · confirmation sent to {o.email}</p>
           </>}
         </section>
-        {o.status !== 'cancelled' && <section className="panel"><h2>Status</h2>
-          <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 10 }}>
-            {STEPS.map((s, i) => <li key={s} style={{ display: 'flex', gap: 10, alignItems: 'center', opacity: i <= step ? 1 : .45 }}>
-              <span style={{ width: 22, height: 22, borderRadius: '50%', background: i <= step ? 'var(--leaf)' : 'var(--line)', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 12 }}>{i <= step ? '✓' : ''}</span>
-              <span style={{ textTransform: 'capitalize' }}>{s}</span></li>)}
-          </ol>
-          {o.tracking_url && <a className="btn btn-ghost" style={{ marginTop: 12 }} href={o.tracking_url} target="_blank" rel="noopener">Track shipment</a>}
-        </section>}
+        <section className="panel"><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}><h2>Tracking</h2>
+            {o.expected_delivery && o.status !== 'delivered' && o.status !== 'cancelled' && <span className="pill green">Expected by {new Date(o.expected_delivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>}</div>
+          {(() => { const ev = o.events ?? []; const when = (s: string) => ev.find(e => e.status === s);
+            const steps = o.status === 'cancelled' || o.status === 'returned' ? ev.map(e => e.status).filter((s, i, a) => a.indexOf(s) === i && s !== 'tracking' && s !== 'paid') : STEPS;
+            return <ol className="timeline">{steps.map((s, i) => { const e = when(s); const done = !!e || i <= step;
+              return <li key={s} className={done ? '' : 'todo'}><i>{done ? '✓' : ''}</i><div><b>{s}</b>{e && <small>{new Date(e.at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}{e.note ? ` · ${e.note}` : ''}</small>}</div></li>; })}</ol>; })()}
+          {(o.courier || o.awb) && <p style={{ fontSize: 14 }}>{o.courier}{o.awb && <> · AWB <b>{o.awb}</b></>}</p>}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+            {o.tracking_url && <a className="btn btn-primary btn-sm" href={o.tracking_url} target="_blank" rel="noopener">Track shipment ↗</a>}
+            {hasSupabase && <Link className="btn btn-ghost btn-sm" href={`/order/${o.order_no}/invoice?t=${token}`}>{o.invoice_no ? `Download invoice ${o.invoice_no}` : 'Order summary'}</Link>}
+          </div>
+        </section>
         {o.referral_code && o.status !== 'cancelled' && <section className="panel referral">
           <h2>Share EssenceKraft, earn points</h2>
           <p>Friends get a discount with your code, and you earn bonus points when their order is delivered.</p>
