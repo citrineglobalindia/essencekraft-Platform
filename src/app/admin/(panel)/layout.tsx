@@ -23,7 +23,7 @@ const GROUPS: [string, Item[]][] = [
   ['Sales', [['/admin/orders', 'Orders', CartIcon], ['/admin/customers', 'Customers', UsersIcon], ['/admin/coupons', 'Coupons', TagIcon]]],
   ['Catalogue', [['/admin/products', 'Products', BoxIcon], ['/admin/inventory', 'Inventory', LayersIcon], ['/admin/reviews', 'Reviews', StarIcon]]],
   ['Marketing', [['/admin/leads', 'Leads', MailIcon], ['/admin/abandoned', 'Abandoned carts', CartIcon], ['/admin/campaigns', 'Segments & broadcasts', SendIcon], ['/admin/loyalty', 'Loyalty & referrals', GiftIcon], ['/admin/promotions', 'Banners & popups', MegaIcon], ['/admin/landing', 'Landing pages', PageIcon]]],
-  ['Content', [['/admin/content', 'Homepage & content', PageIcon], ['/admin/encyclopedia', 'Encyclopedia', BookIcon], ['/admin/seo', 'SEO & redirects', GlobeIcon]]],
+  ['Content', [['/admin/content', 'Homepage & content', PageIcon], ['/admin/pages', 'Site pages', PageIcon], ['/admin/encyclopedia', 'Encyclopedia', BookIcon], ['/admin/claims', 'Claims review', ShieldIcon], ['/admin/seo', 'SEO & redirects', GlobeIcon]]],
   ['System', [['/admin/team', 'Team & roles', ShieldIcon], ['/admin/activity', 'Activity log', ClockIcon], ['/admin/settings', 'Settings', GearIcon]]],
 ];
 const ALL: Item[] = GROUPS.flatMap(([, l]) => l);
