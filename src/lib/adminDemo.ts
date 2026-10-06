@@ -32,7 +32,7 @@ function build() {
       order_items.push({ id: order_items.length + 1, order_id: id, variant_id: v.id, product_name: p.name, variant_label: v.label, sku: v.sku, unit_price: v.price, qty }); }
     const disc = r() < .25 ? Math.round(sub * .1) : 0; const ship = (sub - disc >= 999 ? 0 : 79) + (method === 'cod' ? 49 : 0);
     const touch = { ...pick(sources), landing: '/', at: created.toISOString() };
-    orders.push({ id, order_no, access_token: 'demo', email: `${name.split(' ')[0].toLowerCase()}@example.com`, phone: `98${String(10000000 + Math.floor(r() * 89999999))}`, full_name: name,
+    orders.push({ id, order_no, access_token: 'demo', email: `${name.split(' ')[0].toLowerCase()}.${city.toLowerCase()}@example.com`, phone: `98${String(10000000 + Math.floor(r() * 89999999))}`, full_name: name,
       address: { line1: `${1 + Math.floor(r() * 200)}, ${pick(['MG Road', 'Indiranagar 2nd Stage', 'Koramangala 5th Block', 'Banjara Hills', 'Anna Nagar', 'Baner Road'])}`, city, state, pincode: pin },
       subtotal: sub, discount: disc, shipping: ship, total: sub - disc + ship, coupon_code: disc ? 'WELCOME10' : null, payment_method: method,
       payment_status: status === 'cancelled' ? (method === 'cod' ? 'pending' : 'refunded') : method === 'cod' ? (status === 'delivered' ? 'paid' : 'pending') : 'paid',
@@ -45,9 +45,14 @@ function build() {
   const coupons = [{ id: 'cp1', code: 'WELCOME10', kind: 'percent', value: 10, min_cart: 0, max_uses: null, used: 38, ends_at: null, active: true },
     { id: 'cp2', code: 'DIWALI15', kind: 'percent', value: 15, min_cart: 999, max_uses: 500, used: 0, ends_at: '2026-11-10T23:59:00Z', active: true },
     { id: 'cp3', code: 'FLAT100', kind: 'flat', value: 100, min_cart: 799, max_uses: 200, used: 61, ends_at: null, active: false }];
+  const reviewTxt = [['Calming and pure', 'Two drops in my diffuser and the whole room relaxes. Smells exactly like fresh lavender.'], ['Great for my scalp', 'Mixed with jojoba for weekly massage, noticeable difference in a month.'], ['Strong and fresh', 'Very concentrated, a little goes a long way.'], ['Not for me', 'Scent was stronger than I expected.'], ['Lovely packaging', 'Amber bottle, sealed well, arrived quickly in Bengaluru.']];
+  const reviews: Row[] = Array.from({ length: 24 }, (_, i) => { const p = pick(products); const [title, body] = pick(reviewTxt); return { id: `rv${i}`, product_id: p.id, author: pick(names), rating: title === 'Not for me' ? 3 : 4 + Math.round(r()), title, body, verified: r() < .7, status: i < 6 ? 'pending' : r() < .9 ? 'approved' : 'rejected', created_at: new Date(now - Math.floor(r() * 50) * 864e5).toISOString() }; });
+  const redirects: Row[] = [['/products', '/shop'], ['/essential-oils', '/shop?category=essential-oils'], ['/carrier-oils', '/shop?category=carrier-oils'], ['/aromatherapy', '/categories'], ['/products/9', '/product/lavender-essential-oil'], ['/pages/about', '/about']].map(([source, destination], i) => ({ id: `rd${i}`, source, destination, permanent: true, hits: Math.floor(r() * 400), created_at: new Date(now - 20 * 864e5).toISOString() }));
+  const team: Row[] = [{ id: 'demo', full_name: 'Demo Admin', email: 'demo@essencekraft.in', role: 'admin' }, { id: 'u2', full_name: 'Shilpa', email: 'shilpa@essencekraft.in', role: 'admin' }, { id: 'u3', full_name: 'Warehouse', email: 'stock@essencekraft.in', role: 'inventory' }, { id: 'u4', full_name: 'Marketing', email: 'growth@essencekraft.in', role: 'marketing' }, { id: 'u5', full_name: 'Support', email: 'care@essencekraft.in', role: 'staff' }];
+  const audit_log: Row[] = Array.from({ length: 30 }, (_, i) => { const o = pick(orders); const t = pick(team); const k = pick(['order.status', 'stock.adjust', 'products.update', 'coupons.update', 'settings.update']); return { id: i + 1, actor: t.id, actor_name: t.full_name, action: k, entity: k.split('.')[0], entity_id: k === 'order.status' ? o.order_no : pick(variants).sku, detail: k === 'order.status' ? { from: 'confirmed', to: 'packed' } : k === 'stock.adjust' ? { change: 12, reason: 'purchase' } : {}, created_at: new Date(now - i * 7 * 3600e3).toISOString() }; });
   const stock_movements: Row[] = variants.map((v, i) => ({ id: i + 1, variant_id: v.id, change: v.stock, balance: v.stock, reason: 'initial', reference: null, note: 'Opening stock', created_at: new Date(now - 95 * 864e5).toISOString() }));
-  return { categories, concerns, products, variants, product_concerns, orders, order_items, leads, coupons, stock_movements, audit_log: [] as Row[],
-    profiles: [{ id: 'demo', full_name: 'Demo Admin', role: 'admin' }], settings: [{ key: 'store', value: { free_shipping_min: 999 } }] };
+  return { categories, concerns, products, variants, product_concerns, orders, order_items, leads, coupons, stock_movements, audit_log, reviews, redirects, profiles: team,
+    settings: [{ key: 'store', value: { free_shipping_min: 999, cod_fee: 49, shipping_flat: 79, announcement: ['Free shipping on orders above ₹999', '10% off your first order with code WELCOME10', '100% pure essential oils · GC-MS tested', 'Made in India'], support_email: 'care@essencekraft.in', whatsapp: '919000000000', gstin: '', legal_name: 'EssenceKraft', address: 'Mysuru, Karnataka', hero: { heading: 'Pure Essential Oils for a Healthier You', subheading: 'Discover natural solutions for wellness, beauty and everyday living.', cta: 'Shop Essential Oils', href: '/shop?category=essential-oils' }, sections: { concerns: true, bestsellers: true, promos: true, new_arrivals: true, newsletter: true } } }] };
 }
 const T = build();
 type TName = keyof typeof T;
@@ -56,6 +61,7 @@ function join(t: string, row: Row): Row {
   if (t === 'products') return { ...row, category: T.categories.find(c => c.id === row.category_id) ?? null, variants: T.variants.filter(v => v.product_id === row.id), product_concerns: T.product_concerns.filter(x => x.product_id === row.id) };
   if (t === 'variants') return { ...row, product: (({ name, status }) => ({ name, status }))(T.products.find(p => p.id === row.product_id) ?? { name: '?', status: 'active' }) };
   if (t === 'orders') return { ...row, order_items: T.order_items.filter(i => i.order_id === row.id) };
+  if (t === 'reviews') return { ...row, product: (({ name, slug }) => ({ name, slug }))(T.products.find(p => p.id === row.product_id) ?? { name: '?', slug: '' }) };
   return { ...row };
 }
 
@@ -76,6 +82,7 @@ class Query implements PromiseLike<{ data: any; error: any; count?: number }> { 
   insert(p: Row | Row[]) { this.op = 'insert'; this.payload = p; return this; }
   update(p: Row) { this.op = 'update'; this.payload = p; return this; }
   delete() { this.op = 'delete'; return this; }
+  upsert(p: Row) { const tbl = T[this.t] as Row[]; const k = 'key' in p ? 'key' : 'id'; const ex = tbl.find(x => x[k] === p[k]); if (ex) { this.op = 'update'; this.payload = p; this.f.push(x => x === ex); } else { this.op = 'insert'; this.payload = p; } return this; }
   private run() {
     const tbl = T[this.t] as Row[];
     if (this.op === 'insert') { const rows = (Array.isArray(this.payload) ? this.payload : [this.payload]).map(x => ({ id: `${this.t[0]}${Date.now()}${Math.floor(Math.random() * 1e4)}`, created_at: new Date().toISOString(), ...x })); tbl.push(...rows); return { data: this.one ? rows[0] : rows, error: null }; }
