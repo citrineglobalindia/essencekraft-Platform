@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { db } from '@/lib/admin';
 import { inr } from '@/lib/format';
 import { Bottle } from '@/components/Bottle';
+import { PageHead, Stats } from '@/components/AdminUI';
 
 type Row = { id: string; slug: string; name: string; status: string; claim_status: string; color: string; is_bestseller: boolean; category: { name: string } | null; variants: { price: number; stock: number }[] };
 export default function Products() {
@@ -11,6 +12,8 @@ export default function Products() {
   useEffect(() => { db().from('products').select('id,slug,name,status,claim_status,color,is_bestseller,category:categories(name),variants(price,stock)').order('name').then(({ data }) => setRows((data ?? []) as unknown as Row[])); }, []);
   const list = rows.filter(r => (status === 'all' || r.status === status) && r.name.toLowerCase().includes(q.toLowerCase()));
   return <>
+    <PageHead title="Products" sub="Catalogue, pricing, content and claims review." />
+    <Stats items={[['Products', rows.length], ['Active', rows.filter(r => r.status === 'active').length], ['Drafts', rows.filter(r => r.status === 'draft').length], ['Claims pending review', rows.filter(r => r.claim_status === 'pending').length, 'amber']]} />
     <div className="admin-bar">
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input className="input" placeholder="Search products" value={q} onChange={e => setQ(e.target.value)} aria-label="Search products" />
