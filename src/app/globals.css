@@ -844,3 +844,24 @@ tr:last-child td { border-bottom: 0; }
 .acct-addr { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
 .auth-box { max-width: 460px; } .auth-tabs { display: flex; gap: 4px; margin-bottom: 14px; }
 .auth-tabs button { flex: 1; border: 0; background: var(--sand); padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600; } .auth-tabs button[aria-pressed="true"] { background: var(--forest); color: #fff; }
+/* Migrated content pages */
+.pg-hero { background: linear-gradient(100deg, #f6f0e3, #ece5d2); padding: 26px 0 30px; } .pg-hero h1 { font-size: clamp(1.9rem, 5vw, 3rem); margin-top: 6px; max-width: 22ch; }
+.crumbs { display: flex; gap: 6px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-bottom: 12px; } .crumbs a:hover { color: var(--forest); }
+.pg-body { padding-block: 28px 48px; display: grid; gap: 24px; }
+.pg { max-width: 780px; font-size: 16px; line-height: 1.75; color: #24312b; }
+.pg > * + * { margin-top: 14px; } .pg h2 { font-size: clamp(1.35rem, 3vw, 1.75rem); margin-top: 34px; } .pg h3 { font-size: 1.2rem; margin-top: 26px; } .pg h4 { font-size: 1.02rem; font-family: var(--font-body); font-weight: 700; margin-top: 20px; color: var(--forest); }
+.pg ul, .pg ol { padding-left: 22px; display: grid; gap: 6px; } .pg a:not(.pg-chip):not(.pg-cta) { color: var(--forest); text-decoration: underline; text-underline-offset: 3px; }
+.pg table { width: 100%; border-collapse: collapse; font-size: 14.5px; display: block; overflow-x: auto; } .pg th { background: #f3efe5; text-align: left; } .pg th, .pg td { padding: 9px 12px; border-bottom: 1px solid var(--line); }
+.pg details { border: 1px solid var(--line); border-radius: 12px; background: #fff; padding: 0 16px; } .pg details + details { margin-top: 8px; }
+.pg summary { cursor: pointer; padding: 14px 0; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 12px; } .pg summary::after { content: '+'; color: var(--leaf); font-size: 20px; line-height: 1; } .pg details[open] summary::after { content: '–'; } .pg summary::-webkit-details-marker { display: none; }
+.pg details p { padding-bottom: 14px; margin: 0; color: #3b4a42; }
+.pg-cta { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--forest); border-bottom: 2px solid var(--leaf); padding-bottom: 2px; }
+.pg-chips { display: flex; flex-wrap: wrap; gap: 8px; } .pg-chip { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 8px 14px; font-size: 14px; } .pg-chip:hover { border-color: var(--forest); color: var(--forest); }
+.pg-note { max-width: 780px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+.pg-form { max-width: 780px; }
+.pg-cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); } .pg-card { display: grid; gap: 6px; background: #fff; border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px; transition: border-color .15s, transform .15s; } .pg-card:hover { border-color: var(--forest); transform: translateY(-2px); } .pg-card b { font-family: var(--font-display); font-size: 1.1rem; line-height: 1.3; }
+.claims { display: grid; gap: 12px; } .claim-flags { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; } .claim-flags p { font-size: 13.5px; color: #3b4a42; margin-top: 4px; } .claim-flags mark { background: #fde9b8; padding: 0 2px; border-radius: 3px; }
+.pg-part { display: grid; gap: 18px; }
+.calc { max-width: 780px; display: grid; gap: 0; border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; background: #fff; } @media (min-width: 760px) { .calc { grid-template-columns: 1.4fr 1fr; } }
+.calc-in { padding: 20px; display: grid; gap: 16px; } .calc fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; } .calc legend { font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); padding: 0; } .calc legend b { color: var(--forest); margin-left: 6px; }
+.calc-out { background: linear-gradient(160deg, #0f3d2e, #1b5640); color: #dfeee5; padding: 22px; display: grid; align-content: center; gap: 2px; text-align: center; } .calc-out b { font-family: var(--font-display); font-size: 3.4rem; color: #fff; line-height: 1; } .calc-out span { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; } .calc-out p { margin-top: 8px; } .calc-out strong { color: #fff; } .calc-out em { margin-top: 10px; font-size: 13px; opacity: .85; }
