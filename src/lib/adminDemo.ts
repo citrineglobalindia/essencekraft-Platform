@@ -39,6 +39,8 @@ function build() {
       payment_ref: method === 'razorpay' ? `order_demo${i}` : null, status, tracking_url: ['shipped', 'delivered'].includes(status) ? 'https://shiprocket.co/tracking/demo' : null,
       marketing_consent: r() < .5, first_touch: touch, last_touch: touch, notes: null, created_at: created.toISOString(), updated_at: created.toISOString() });
   }
+  orders.forEach((o, i) => { if (o.full_name === 'Ananya Rao') o.user_id = 'demo'; if (o.status !== 'placed' && o.status !== 'cancelled') { o.invoice_no = `EK/26-27/${String(i + 1).padStart(5, '0')}`; o.invoice_date = o.created_at; } });
+  order_items.forEach(i => { i.hsn = '3301'; i.gst_rate = 18; });
   const leads: Row[] = Array.from({ length: 46 }, (_, i) => { const n = pick(names); const at = new Date(now - Math.floor(r() * 60) * 864e5).toISOString();
     return { id: `l${i}`, source: pick(['welcome_popup', 'welcome_popup', 'newsletter', 'back_in_stock', 'whatsapp']), name: r() < .4 ? n : null, email: `${n.split(' ')[0].toLowerCase()}${i}@example.com`, phone: r() < .4 ? `97${10000000 + i}` : null,
       interest: null, landing_page: pick(['/', '/categories', '/product/lavender-essential-oil', '/concern/sleep-calm']), consent: true, status: 'new', created_at: at, first_touch: pick(sources), last_touch: pick(sources) }; });
@@ -57,6 +59,9 @@ function build() {
     loyalty_ledger: orders.filter(o => o.status === 'delivered').slice(0, 25).map((o, i): Row => ({ id: i + 1, email: o.email, points: Math.floor((o.total - o.shipping) / 100), reason: 'order', order_no: o.order_no, note: null, created_at: o.created_at })),
     referral_codes: [...new Set(orders.map(o => o.email))].slice(0, 30).map((e, i) => ({ email: e, code: `REF-${e.slice(0, 4).toUpperCase()}${1000 + i}`, created_at: new Date(now - i * 864e5).toISOString() })),
     wiki_overrides: [] as Row[],
+    addresses: [{ id: 'ad1', user_id: 'demo', label: 'Home', full_name: 'Ananya Rao', phone: '9876543210', line1: '42, 12th Main, Indiranagar', line2: 'Near 100 Feet Road', city: 'Bengaluru', state: 'Karnataka', pincode: '560038', is_default: true, created_at: new Date(now).toISOString() }] as Row[],
+    wishlist: [] as Row[],
+    order_events: orders.flatMap(o => ['placed', 'confirmed', 'packed', 'shipped', 'delivered'].slice(0, Math.max(1, ['placed', 'confirmed', 'packed', 'shipped', 'delivered'].indexOf(o.status) + 1)).map((st, k) => ({ id: `${o.id}-${k}`, order_id: o.id, status: st, note: null, created_at: new Date(+new Date(o.created_at) + k * 864e5).toISOString() }))) as Row[],
     promotions: [{ id: 'pm1', kind: 'banner', title: 'Diwali Glow Sale — 15% off', body: 'On every essential oil till 10 Nov', cta: 'Shop the sale', href: '/shop?offer=1', coupon_code: 'DIWALI15', theme: 'amber', starts_at: new Date(now - 864e5).toISOString(), ends_at: new Date(now + 20 * 864e5).toISOString(), active: true, created_at: new Date(now - 864e5).toISOString() }],
   };
   function T0items(id: string) { return order_items.filter(x => x.order_id === id).map(x => ({ variant_id: x.variant_id, name: x.product_name, label: x.variant_label, qty: x.qty, price: x.unit_price })); }
@@ -70,7 +75,7 @@ type TName = keyof typeof T;
 function join(t: string, row: Row): Row {
   if (t === 'products') return { ...row, category: T.categories.find(c => c.id === row.category_id) ?? null, variants: T.variants.filter(v => v.product_id === row.id), product_concerns: T.product_concerns.filter(x => x.product_id === row.id) };
   if (t === 'variants') return { ...row, product: (({ name, status }) => ({ name, status }))(T.products.find(p => p.id === row.product_id) ?? { name: '?', status: 'active' }) };
-  if (t === 'orders') return { ...row, order_items: T.order_items.filter(i => i.order_id === row.id) };
+  if (t === 'orders') return { ...row, order_items: T.order_items.filter(i => i.order_id === row.id), order_events: T.order_events.filter(e => e.order_id === row.id) };
   if (t === 'reviews') return { ...row, product: (({ name, slug }) => ({ name, slug }))(T.products.find(p => p.id === row.product_id) ?? { name: '?', slug: '' }) };
   return { ...row };
 }
@@ -125,6 +130,7 @@ function rpc(fn: string, a: Row) {
       T.order_items.filter(i => i.order_id === o.id).forEach(i => { const v = T.variants.find(x => x.id === i.variant_id); if (v) { v.stock += i.qty; T.stock_movements.push({ id: T.stock_movements.length + 1, variant_id: v.id, change: i.qty, balance: v.stock, reason: a.p_status === 'cancelled' ? 'cancel' : 'return', reference: o.order_no, note: null, created_at: new Date().toISOString() }); } });
     o.status = a.p_status; if (a.p_tracking) o.tracking_url = a.p_tracking; return { data: null, error: null };
   }
+  if (fn === 'claim_my_orders' || fn === 'update_my_profile') return { data: 0, error: null };
   if (fn === 'redeem_points') {
     const bal = T.loyalty_ledger.filter(x => x.email === a.p_email).reduce((s, x) => s + x.points, 0);
     if (a.p_points < 100) return { data: null, error: { message: 'Minimum redemption is 100 points' } };
@@ -138,7 +144,8 @@ function rpc(fn: string, a: Row) {
 export const demoClient = {
   from: (t: string) => new Query(t as TName),
   rpc: (fn: string, a: Row) => Promise.resolve(rpc(fn, a)),
-  auth: { getUser: async () => ({ data: { user: { id: 'demo', email: 'demo@essencekraft.in' } } }), signOut: async () => ({ error: null }),
+  auth: { getUser: async () => ({ data: { user: { id: 'demo', email: 'demo@essencekraft.in' } } }), signOut: async () => ({ error: null }), updateUser: async () => ({ error: null }),
+    signInWithOtp: async () => ({ error: null }), verifyOtp: async () => ({ error: null }), signUp: async () => ({ data: { session: null }, error: null }),
     signInWithPassword: async () => ({ error: null }), resetPasswordForEmail: async () => ({ error: null }) },
   storage: { from: () => ({ upload: async () => ({ error: { message: 'Image upload needs Supabase connected' } }), getPublicUrl: () => ({ data: { publicUrl: '' } }) }) },
 };
