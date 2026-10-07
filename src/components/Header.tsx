@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { BRAND } from '@/lib/brand';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCart } from '@/lib/cart';
@@ -67,7 +68,7 @@ export function Header({ index, nav }: { index: SearchItem[]; nav: Nav }) {
       <div className="wrap">
         <div className="header-row">
           <button className="icon-btn menu-toggle" aria-label="Open menu" onClick={() => setMenu(true)}><MenuIcon /></button>
-          <Link href="/" className="logo" aria-label="EssenceKraft home"><b>EssenceKraft</b><small>NATURE IN EVERY DROP</small></Link>
+          <Link href="/" className="logo" aria-label="EssenceKraft home"><img src={BRAND.logo} alt="essenceKRAFT" width={216} height={40} /></Link>
           <ul className="nav">
             <li><Link href="/shop?category=essential-oils">Essential Oils</Link>
               <div className="mega"><div><h4>Shop by concern</h4>{nav.concerns.map(c => <Link key={c.slug} href={`/concern/${c.slug}`}>{c.name}</Link>)}</div>
