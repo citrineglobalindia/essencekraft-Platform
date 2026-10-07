@@ -5,7 +5,8 @@ import { PromoBanner } from '@/components/PromoBanner';
 import { ProductCard } from '@/components/ProductCard';
 import { Hero } from '@/components/Hero';
 import { LeadForm } from '@/components/LeadForm';
-import { Bottle, Sprig } from '@/components/Bottle';
+import { Sprig } from '@/components/Bottle';
+import { BRAND, CONCERN_IMG } from '@/lib/brand';
 
 export default async function Home() {
   const [products, concerns, settings, promos] = await Promise.all([getProducts(), getConcerns(), getSettings(), getPromotions()]);
@@ -17,6 +18,7 @@ export default async function Home() {
   const slides = [
     { id: 'hero-pure', heading: settings.hero?.heading || '100% Pure Essential Oils', copy: settings.hero?.subheading || 'Natural care for a calmer mind, healthier skin, stronger hair and a more balanced you.', cta: settings.hero?.cta || 'Shop Essential Oils', href: settings.hero?.href || '/shop?category=essential-oils', ...pick(bySlug('lavender-essential-oil')) },
     { id: 'hero-hair', heading: 'Rosemary for hair routines', copy: 'Steam-distilled rosemary, ready to blend with jojoba for a weekly scalp massage.', cta: 'Shop Hair & Scalp', href: '/concern/hair-scalp', ...pick(bySlug('rosemary-essential-oil')) },
+    { id: 'hero-collection', heading: 'The alchemy of scent', copy: 'Pure, steam-distilled essential oils — crafted in India for mind, body and soul.', cta: 'Shop the collection', href: '/shop', color: '#c27a1a', name: 'EssenceKraft collection', image: BRAND.heroCollection },
     { id: 'hero-focus', heading: 'Bright oils for busy days', copy: 'Peppermint, lemongrass and sweet orange for a fresher-smelling desk.', cta: 'Shop Focus & Energy', href: '/concern/focus-energy', ...pick(bySlug('peppermint-essential-oil')) },
   ];
   return <>
@@ -26,7 +28,7 @@ export default async function Home() {
     {on('concerns') && <section className="section wrap" aria-labelledby="concern-h">
       <div className="section-head"><div><h2 id="concern-h">Shop by Concern</h2><p className="muted">Solutions for your everyday wellness goals.</p></div><Link className="btn btn-ghost btn-pill" href="/shop">View all</Link></div>
       <div className="concerns">
-        {concerns.map(c => <Link key={c.slug} href={`/concern/${c.slug}`} className="concern"><div className="art"><Sprig color={c.color} /></div><span>{c.name}</span></Link>)}
+        {concerns.map(c => <Link key={c.slug} href={`/concern/${c.slug}`} className="concern"><div className="art">{CONCERN_IMG[c.slug] ? <img src={CONCERN_IMG[c.slug]} alt="" loading="lazy" /> : <Sprig color={c.color} />}</div><span>{c.name}</span></Link>)}
       </div>
     </section>}
 
@@ -37,9 +39,9 @@ export default async function Home() {
 
     {on('promos') && <section className="wrap promos">
       <div className="promo bundle"><div><h2>Bundle &amp; Save</h2><p className="muted" style={{ marginTop: 6 }}>Curated essential oil sets for your complete wellness routine.</p><Link className="btn btn-primary" href="/shop?offer=1">Shop offers</Link></div>
-        <div className="promo-art" aria-hidden>{products.slice(0, 5).map(p => <Bottle key={p.id} color={p.color} />)}</div></div>
-      <div className="promo learn"><div><h2>Explore Natural Wellness</h2><p className="muted" style={{ marginTop: 6 }}>Guides on dilution, blending and safe everyday use.</p><Link className="btn btn-primary" href="/pages/safe-use">Read the safe-use guide</Link></div>
-        <div className="promo-art" aria-hidden style={{ width: 70 }}><Sprig color="#3e7b4f" /></div></div>
+        <img className="promo-photo" src={BRAND.promoGifting} alt="" loading="lazy" /></div>
+      <div className="promo learn"><div><h2>Explore Natural Wellness</h2><p className="muted" style={{ marginTop: 6 }}>Guides on dilution, blending and safe everyday use.</p><Link className="btn btn-primary" href="/learn/beginners-guide">Read the beginner’s guide</Link></div>
+        <img className="promo-photo" src={BRAND.promoWellness} alt="" loading="lazy" /></div>
     </section>}
 
     {on('new_arrivals') && fresh.length > 0 && <section className="section wrap" aria-labelledby="new-h">
@@ -50,4 +52,4 @@ export default async function Home() {
     {on('newsletter') && <div className="wrap section" style={{ paddingTop: 0 }}><LeadForm /></div>}
   </>;
 }
-function pick(p: { color: string; name: string }) { return { color: p.color, name: p.name }; }
+function pick(p: { color: string; name: string; images?: string[] }) { return { color: p.color, name: p.name, image: p.images?.[0] }; }
