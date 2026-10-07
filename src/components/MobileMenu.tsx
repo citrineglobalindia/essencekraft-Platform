@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { BRAND } from '@/lib/brand';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
@@ -27,7 +28,7 @@ export function MobileMenu({ open, onClose, nav }: { open: boolean; onClose: () 
     <div className="scrim" onClick={onClose} />
     <nav className="drawer left mmenu" aria-label="Main menu" role="dialog" aria-modal="true">
       <div className="drawer-head">
-        <span className="logo logo-left"><b style={{ fontSize: 22 }}>EssenceKraft</b><small>NATURE IN EVERY DROP</small></span>
+        <span className="logo logo-left"><img src={BRAND.logo} alt="essenceKRAFT" width={184} height={34} style={{ height: 34 }} /></span>
         <button className="icon-btn" aria-label="Close menu" onClick={onClose}><CloseIcon /></button>
       </div>
       <div className="drawer-body" onClick={e => { if ((e.target as HTMLElement).closest('a')) onClose(); }}>
