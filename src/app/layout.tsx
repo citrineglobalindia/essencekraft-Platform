@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { BRAND } from '@/lib/brand';
 import { Fraunces, Instrument_Sans } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
   title: { default: 'EssenceKraft — 100% Pure Essential Oils', template: '%s | EssenceKraft' },
   description: 'Pure, GC-MS tested essential and carrier oils made in India. Shop lavender, rosemary, tea tree, peppermint and more.',
   openGraph: { siteName: 'EssenceKraft', type: 'website', locale: 'en_IN' },
+  icons: { icon: BRAND.icon, apple: BRAND.icon },
 };
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#0f3d2e' };
 
