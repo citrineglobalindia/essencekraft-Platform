@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { deleteProduct } from '@/lib/productDelete';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { db } from '@/lib/admin';
@@ -73,7 +74,7 @@ export default function EditProduct({ params }: { params: { id: string } }) {
 
   return <>
     <div className="admin-bar"><div><Link className="link" href="/admin/products">← Products</Link><h1 style={{ fontSize: '1.5rem', marginTop: 6 }}>{isNew ? 'New product' : p.name}</h1></div>
-      <div style={{ display: 'flex', gap: 8 }}>{!isNew && <Link className="btn btn-ghost btn-sm" href={`/product/${p.slug}`} target="_blank">View on store</Link>}<button className="btn btn-primary btn-sm" onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save product'}</button></div></div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{!isNew && <button className="btn btn-ghost btn-sm btn-danger" disabled={busy} onClick={async () => { const r = await deleteProduct(params.id, p.name); if (!r.msg) return; if (!r.ok) setMsg({ t: 'error', m: r.msg }); else if (r.archived) { setMsg({ t: 'ok', m: r.msg }); setP(x => ({ ...x, status: 'archived' })); } else router.replace('/admin/products?deleted=' + encodeURIComponent(p.name)); }}>Delete</button>}{!isNew && <Link className="btn btn-ghost btn-sm" href={`/product/${p.slug}`} target="_blank">View on store</Link>}<button className="btn btn-primary btn-sm" onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save product'}</button></div></div>
     {msg && <p className={`notice ${msg.t}`} role="status">{msg.m}</p>}
     <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 440px), 1fr))', alignItems: 'start' }}>
       <section className="panel form-grid"><h2>Details</h2>
