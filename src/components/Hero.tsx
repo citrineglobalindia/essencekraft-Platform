@@ -5,7 +5,7 @@ import { Bottle } from './Bottle';
 import { DropIcon, FlaskIcon, LeafIcon, PinIcon } from './Icons';
 import { track } from '@/lib/attribution';
 
-type Slide = { heading: string; copy: string; cta: string; href: string; color: string; name: string; id: string };
+type Slide = { heading: string; copy: string; cta: string; href: string; color: string; name: string; id: string; image?: string };
 export function Hero({ slides }: { slides: Slide[] }) {
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -30,7 +30,7 @@ export function Hero({ slides }: { slides: Slide[] }) {
             <div><i><PinIcon size={18} /></i>Made in<br />India</div>
           </div>
         </div>
-        <div className="hero-art" aria-hidden><div className="plinth" /><Bottle color={s.color} label={s.name} /></div>
+        <div className="hero-art" aria-hidden>{s.image ? <img key={s.id} className="hero-photo" src={s.image} alt="" fetchPriority={i === 0 ? 'high' : 'auto'} /> : <><div className="plinth" /><Bottle color={s.color} label={s.name} /></>}</div>
       </div>
       {slides.length > 1 && <div className="dots">{slides.map((x, j) => <button key={x.id} aria-label={`Show slide ${j + 1}`} aria-current={i === j} onClick={() => setI(j)} />)}</div>}
     </section>
