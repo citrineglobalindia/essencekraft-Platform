@@ -1,9 +1,10 @@
 'use client';
 import Link from 'next/link';
+import { BRAND } from '@/lib/brand';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { db, isDemo } from '@/lib/admin';
-import { BoxIcon, ChartIcon, LayersIcon, TagIcon, UsersIcon, CartIcon, SearchIcon, LeafIcon } from '@/components/Icons';
+import { BoxIcon, ChartIcon, LayersIcon, TagIcon, UsersIcon, CartIcon, SearchIcon } from '@/components/Icons';
 
 const ic = (d: string) => function I({ size = 18 }: { size?: number }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>; };
 const StarIcon = ic('M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z');
@@ -50,7 +51,7 @@ export default function Panel({ children }: { children: React.ReactNode }) {
   return (
     <div className="adm">
       <aside className="adm-side">
-        <Link href="/admin" className="adm-brand"><span><LeafIcon size={18} /></span><div><b>EssenceKraft</b><small>Admin console</small></div></Link>
+        <Link href="/admin" className="adm-brand"><span><img src={BRAND.mark.replace('logo-mark-dark', 'logo-mark-light')} alt="" width={18} height={26} style={{ height: 26, width: 'auto' }} /></span><div><b>EssenceKraft</b><small>Admin console</small></div></Link>
         <nav aria-label="Admin">
           {GROUPS.map(([g, links]) => <div key={g} className="adm-group"><p>{g}</p>
             {links.map(([href, label, Icon]) => <Link key={href} href={href} aria-current={current(href) ? 'page' : undefined}><Icon size={18} /><span>{label}</span>{badge(href) > 0 && <em>{badge(href)}</em>}</Link>)}
