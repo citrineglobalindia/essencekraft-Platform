@@ -3,12 +3,12 @@ import { useEffect, useState } from 'react';
 import { deleteProduct } from '@/lib/productDelete';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { db } from '@/lib/admin';
+import { db, refreshStore } from '@/lib/admin';
 import { Bottle } from '@/components/Bottle';
 
 type Variant = { id?: string; sku: string; label: string; price: number; compare_at: number | null; stock: number; low_stock_threshold: number; allow_backorder: boolean; sort: number; _new?: boolean; _initial?: number };
 type Opt = { id: string; name: string; slug: string };
-const blank = { slug: '', name: '', botanical_name: '', tagline: '', description: '', category_id: '', aroma: '', extraction: '', origin: 'India', uses: '', suggested_blends: '', safety: '', purity: '', color: '#7a5a9e', images: [] as string[], is_bestseller: false, is_new: true, status: 'draft', claim_status: 'pending', seo_title: '', seo_description: '' };
+const blank = { slug: '', name: '', botanical_name: '', tagline: '', description: '', category_id: '', aroma: '', extraction: '', origin: 'India', uses: '', suggested_blends: '', safety: '', purity: '', color: '#7a5a9e', images: [] as string[], is_bestseller: false, is_new: true, status: 'active', claim_status: 'pending', seo_title: '', seo_description: '' };
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
 export default function EditProduct({ params }: { params: { id: string } }) {
@@ -63,7 +63,8 @@ export default function EditProduct({ params }: { params: { id: string } }) {
       }
     }
     await db().from('audit_log').insert({ action: isNew ? 'product.create' : 'product.update', entity: 'product', entity_id: pid, detail: { name: p.name } }).then(() => {}, () => {});
-    setBusy(false); setMsg({ t: 'ok', m: 'Product saved.' });
+    await refreshStore(p.slug);
+    setBusy(false); setMsg({ t: 'ok', m: p.status === 'active' ? 'Product saved and live on the store.' : `Product saved as ${p.status} — not visible on the store. Set Status to Active to publish.` });
     if (isNew) router.replace(`/admin/products/${pid}`);
   };
 
@@ -81,7 +82,7 @@ export default function EditProduct({ params }: { params: { id: string } }) {
         {T('name', 'Product name')}{T('slug', 'URL slug', false, `/product/${p.slug || '…'}`)}{T('botanical_name', 'Botanical name')}{T('tagline', 'Short description')}{T('description', 'Approved long description', true)}
         <div className="form-grid two">
           <div className="field"><label htmlFor="cat">Category</label><select id="cat" className="select" value={p.category_id} onChange={set('category_id')}><option value="">—</option>{cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-          <div className="field"><label htmlFor="status">Status</label><select id="status" className="select" value={p.status} onChange={set('status')}><option value="draft">Draft</option><option value="active">Active</option><option value="archived">Archived</option></select></div>
+          <div className="field"><label htmlFor="status">Status</label><select id="status" className="select" value={p.status} onChange={set('status')}><option value="active">Active (visible on store)</option><option value="draft">Draft (hidden)</option><option value="archived">Archived</option></select></div>
         </div>
         <div className="field"><label>Concerns</label><div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>{cons.map(c => <label key={c.id} className="check"><input type="checkbox" checked={picked.includes(c.id)} onChange={() => setPicked(x => x.includes(c.id) ? x.filter(y => y !== c.id) : [...x, c.id])} />{c.name}</label>)}</div></div>
         <div style={{ display: 'flex', gap: 18 }}><label className="check"><input type="checkbox" checked={p.is_bestseller} onChange={set('is_bestseller')} />Best seller</label><label className="check"><input type="checkbox" checked={p.is_new} onChange={set('is_new')} />New arrival</label></div>

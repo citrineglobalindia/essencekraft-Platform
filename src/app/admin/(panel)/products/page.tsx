@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { deleteProduct } from '@/lib/productDelete';
 import { useEffect, useState } from 'react';
-import { db } from '@/lib/admin';
+import { db, refreshStore } from '@/lib/admin';
 import { inr } from '@/lib/format';
 import { Bottle } from '@/components/Bottle';
 import { PageHead, Stats } from '@/components/AdminUI';
@@ -13,6 +13,7 @@ export default function Products() {
   const [msg, setMsg] = useState<{ t: 'ok' | 'error'; m: string } | null>(null);
   const load = () => db().from('products').select('id,slug,name,status,claim_status,color,images,is_bestseller,category:categories(name),variants(price,stock)').order('name').then(({ data }) => setRows((data ?? []) as unknown as Row[]));
   useEffect(() => { load(); const d = new URLSearchParams(window.location.search).get('deleted'); if (d) setMsg({ t: 'ok', m: `“${d}” deleted.` }); }, []);
+  const publish = async (r: Row) => { const { error } = await db().from('products').update({ status: 'active' }).eq('id', r.id); if (error) return setMsg({ t: 'error', m: error.message }); await refreshStore(r.slug); setMsg({ t: 'ok', m: `“${r.name}” is now live on the store.` }); load(); };
   const remove = async (r: Row) => { const res = await deleteProduct(r.id, r.name); if (res.msg) setMsg({ t: res.ok ? 'ok' : 'error', m: res.msg }); if (res.ok) load(); };
   const list = rows.filter(r => (status === 'all' || r.status === status) && r.name.toLowerCase().includes(q.toLowerCase()));
   return <>
@@ -35,7 +36,7 @@ export default function Products() {
           <td className="hide-sm">{r.category?.name}</td>
           <td>{r.variants.length ? inr(min) : '—'}</td>
           <td><span className={`pill ${stock <= 0 ? 'red' : stock < 20 ? 'amber' : 'green'}`}>{stock}</span></td>
-          <td><span className={`pill ${r.status === 'active' ? 'green' : 'grey'}`}>{r.status}</span></td>
+          <td><span className={`pill ${r.status === 'active' ? 'green' : 'grey'}`}>{r.status}</span>{r.status === 'draft' && <><br /><button className="link" onClick={() => publish(r)}>Publish</button></>}</td>
           <td className="hide-sm"><span className={`pill ${r.claim_status === 'approved' ? 'green' : r.claim_status === 'rejected' ? 'red' : 'amber'}`}>{r.claim_status}</span></td>
           <td style={{ textAlign: 'right' }}><button className="link link-danger" onClick={() => remove(r)} aria-label={`Delete ${r.name}`}>Delete</button></td>
         </tr>); })}
