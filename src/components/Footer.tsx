@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { BRAND } from '@/lib/brand';
 import { WHATSAPP } from '@/lib/format';
 import { FlaskIcon, LeafIcon, PinIcon } from './Icons';
 
@@ -17,7 +18,7 @@ export function Footer() {
       <div className="wrap">
         <div className="footer-top">
           <div className="footer-brand">
-            <span className="logo logo-left"><b>EssenceKraft</b><small>NATURE IN EVERY DROP</small></span>
+            <span className="logo logo-left"><img src={BRAND.logoLight} alt="essenceKRAFT" width={216} height={40} /></span>
             <p>Pure essential and carrier oils, bottled in India.</p>
             <div className="footer-cta">
               <a className="btn btn-pill footer-wa" aria-label="Chat on WhatsApp" href={`https://wa.me/${WHATSAPP}`} target="_blank" rel="noopener" data-track="whatsapp_click"><WaIcon /><span>Chat on WhatsApp</span></a>
