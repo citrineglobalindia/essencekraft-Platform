@@ -1,5 +1,6 @@
 'use client';
 import { Suspense, useState } from 'react';
+import { BRAND } from '@/lib/brand';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { hasSupabase, browserClient } from '@/lib/supabase';
 
@@ -16,7 +17,7 @@ function Login() {
       if (error) { setErr(error.message === 'Invalid login credentials' ? 'Email or password is incorrect.' : error.message); setBusy(false); return; }
       router.replace(sp.get('next') || '/admin'); router.refresh();
     }}>
-      <span className="logo"><b>EssenceKraft</b><small>ADMIN</small></span>
+      <span className="logo"><img src={BRAND.logo} alt="essenceKRAFT" width={216} height={40} /><small style={{ marginTop: 6 }}>ADMIN</small></span>
       <div className="field"><label htmlFor="email">Email</label><input id="email" name="email" type="email" className="input" autoComplete="username" required /></div>
       <div className="field"><label htmlFor="pw">Password</label><input id="pw" name="password" type="password" className="input" autoComplete="current-password" required minLength={8} /></div>
       {err && <p className="notice error" role="alert">{err}</p>}
