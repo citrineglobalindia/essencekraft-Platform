@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { adminClient } from '@/lib/server';
+import { sendOrderConfirmation } from '@/lib/email';
 
 // Backup confirmation if the customer closes the tab before /verify runs. Configure in Razorpay dashboard: payment.captured, payment.failed.
 export async function POST(req: Request) {
@@ -14,7 +15,12 @@ export async function POST(req: Request) {
   const pay = evt?.payload?.payment?.entity;
   if (!pay?.order_id) return NextResponse.json({ ok: true });
   const db = adminClient();
-  if (evt.event === 'payment.captured') await db.from('orders').update({ payment_status: 'paid', status: 'confirmed' }).eq('payment_ref', pay.order_id).neq('payment_status', 'paid');
+  if (evt.event === 'payment.captured') {
+    await db.from('orders').update({ payment_status: 'paid', status: 'confirmed', updated_at: new Date().toISOString() }).eq('payment_ref', pay.order_id).neq('payment_status', 'paid');
+    // A late capture can follow an earlier payment.failed for the same order (e.g. UPI retry) — this still marks it paid.
+    const { data: o } = await db.from('orders').select('order_no').eq('payment_ref', pay.order_id).maybeSingle();
+    if (o) await sendOrderConfirmation(o.order_no, new URL(req.url).origin).catch(e => console.error('[email]', e));
+  }
   if (evt.event === 'payment.failed') await db.from('orders').update({ payment_status: 'failed' }).eq('payment_ref', pay.order_id).eq('payment_status', 'pending');
   return NextResponse.json({ ok: true });
 }

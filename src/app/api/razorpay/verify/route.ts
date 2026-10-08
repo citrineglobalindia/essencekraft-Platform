@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { adminClient } from '@/lib/server';
+import { sendOrderConfirmation } from '@/lib/email';
 
 export async function POST(req: Request) {
   const { order_no, token, razorpay_order_id, razorpay_payment_id, razorpay_signature } = await req.json();
@@ -16,5 +17,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Payment signature invalid' }, { status: 400 });
   }
   await db.from('orders').update({ payment_status: 'paid', status: 'confirmed', notes: `razorpay_payment_id=${razorpay_payment_id}`, updated_at: new Date().toISOString() }).eq('id', o.id);
+  await sendOrderConfirmation(order_no, new URL(req.url).origin).catch(e => console.error('[email]', e));
   return NextResponse.json({ ok: true });
 }

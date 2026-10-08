@@ -99,7 +99,7 @@ export default function Checkout() {
       if (method === 'razorpay' && hasSupabase) {
         const paid = await payOrder(order_no, token).catch(() => false);
         router.push(`/order/${order_no}?t=${token}${paid ? '' : '&retry=1'}`);
-      } else router.push(`/order/${order_no}?t=${token}`);
+      } else { if (hasSupabase) await fetch('/api/orders/confirm', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ order_no, token }) }).catch(() => {}); router.push(`/order/${order_no}?t=${token}`); }
     } catch (e) { setFail(e instanceof Error ? e.message : 'Order could not be placed.'); setBusy(false); }
   };
 
