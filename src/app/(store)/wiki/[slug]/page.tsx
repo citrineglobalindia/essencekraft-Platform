@@ -8,9 +8,11 @@ import { inr, SITE_URL } from '@/lib/format';
 import { Bottle } from '@/components/Bottle';
 import { FlaskIcon } from '@/components/Icons';
 
-export const dynamicParams = false;
+// 1,200+ articles are rendered on first visit and then cached (ISR) instead of being pre-built on every deploy —
+// keeps each deployment small (was ~157 MB of HTML per deploy). Unknown slugs still 404 via notFound().
+export const dynamicParams = true;
 export const revalidate = 300; // picks up encyclopedia edits published from admin
-export function generateStaticParams() { return wikiIndex.map(e => ({ slug: e.slug })); }
+export function generateStaticParams() { return [] as { slug: string }[]; }
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const e = getEntry(params.slug); if (!e) return {};
