@@ -2,6 +2,15 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { db, fmtDate, statusTone } from '@/lib/admin';
+import { browserClient, hasSupabase } from '@/lib/supabase';
+
+async function staffPost(path: string, body: unknown) {
+  const { data } = hasSupabase ? await browserClient().auth.getSession() : { data: { session: null } };
+  const r = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${data.session?.access_token ?? ''}` }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error ?? `Request failed (${r.status})`);
+  return j;
+}
 import { inr } from '@/lib/format';
 
 type Item = { id: number; product_name: string; variant_label: string; sku: string; unit_price: number; qty: number };
@@ -18,6 +27,15 @@ export default function OrderDetail({ params }: { params: { id: string } }) {
   const saveShip = async () => { if (!o) return; const url = ship.awb ? (COURIERS[ship.courier]?.(ship.awb) || track) : track;
     const { error } = await db().from('orders').update({ courier: ship.courier, awb: ship.awb || null, expected_delivery: ship.expected || null, tracking_url: url || null }).eq('id', o.id);
     if (error) setErr(error.message); else { setSaved('Shipment details saved — the customer’s tracking page updates now.'); load(); } };
+  const [sr, setSr] = useState<{ busy: string; msg: string; err: boolean }>({ busy: '', msg: '', err: false });
+  const srRun = async (kind: 'ship' | 'label' | 'sync') => {
+    if (!o) return; setSr({ busy: kind, msg: '', err: false });
+    try {
+      if (kind === 'ship') { const j = await staffPost('/api/shipping/ship', { order_id: o.id }); setSr({ busy: '', msg: `Sent to Shiprocket — ${j.courier || 'courier'} · AWB ${j.awb}. Pickup requested.`, err: false }); load(); }
+      if (kind === 'label') { const j = await staffPost('/api/shipping/label', { order_no: o.order_no }); window.open(j.url, '_blank'); setSr({ busy: '', msg: 'Label opened in a new tab.', err: false }); }
+      if (kind === 'sync') { const j = await staffPost('/api/shipping/sync', { awb: o.awb }); setSr({ busy: '', msg: `Shiprocket status: ${j.current_status || 'no scans yet'}${j.updated ? ` — order moved to ${j.status}.` : '.'}`, err: false }); load(); }
+    } catch (e) { setSr({ busy: '', msg: e instanceof Error ? e.message : 'Shiprocket error', err: true }); }
+  };
   useEffect(() => { load(); }, [load]);
   if (!o) return <p>Loading…</p>;
 
@@ -47,6 +65,17 @@ export default function OrderDetail({ params }: { params: { id: string } }) {
           <div><span>Shipping</span><span>{inr(o.shipping)}</span></div><div className="grand"><span>Total</span><span>{inr(o.total)}</span></div>
         </div></section>
       <section className="panel form-grid"><h2>Fulfilment</h2>
+        <div className="sr-box">
+          <div><b>Shiprocket</b><small className="muted">{o.awb ? `${o.courier ?? ''} · AWB ${o.awb}` : 'Creates the shipment, assigns a courier and requests pickup from your Shiprocket pickup address.'}</small></div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {!o.awb && !['cancelled', 'returned', 'delivered'].includes(o.status) && <button className="btn btn-primary btn-sm" disabled={!!sr.busy || (o.payment_method !== 'cod' && o.payment_status !== 'paid')} onClick={() => srRun('ship')}>{sr.busy === 'ship' ? 'Sending…' : 'Ship with Shiprocket'}</button>}
+            {o.awb && <button className="btn btn-ghost btn-sm" disabled={!!sr.busy} onClick={() => srRun('label')}>{sr.busy === 'label' ? 'Getting label…' : 'Download label'}</button>}
+            {o.awb && <button className="btn btn-ghost btn-sm" disabled={!!sr.busy} onClick={() => srRun('sync')}>{sr.busy === 'sync' ? 'Checking…' : 'Sync tracking'}</button>}
+          </div>
+          {o.payment_method !== 'cod' && o.payment_status !== 'paid' && !o.awb && <small className="muted">Available once the online payment is received.</small>}
+          {sr.msg && <p className={`notice ${sr.err ? 'error' : 'ok'}`} role="status">{sr.msg}</p>}
+        </div>
+        <small className="muted">Or enter shipment details manually:</small>
         <div className="form-grid two">
           <div className="field"><label htmlFor="cour">Courier</label><select id="cour" className="select" value={ship.courier} onChange={e => setShip({ ...ship, courier: e.target.value })}>{Object.keys(COURIERS).map(c => <option key={c}>{c}</option>)}</select></div>
           <div className="field"><label htmlFor="awb">AWB / tracking no.</label><input id="awb" className="input" value={ship.awb} onChange={e => setShip({ ...ship, awb: e.target.value.trim() })} /></div>

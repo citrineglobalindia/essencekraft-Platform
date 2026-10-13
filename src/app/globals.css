@@ -885,3 +885,9 @@ tr:last-child td { border-bottom: 0; }
 .promo { position: relative; } .promo-photo { width: clamp(150px, 42%, 300px); aspect-ratio: 4/3; object-fit: cover; border-radius: 14px; align-self: stretch; height: 100%; max-height: 210px; box-shadow: 0 12px 26px -14px rgba(40,30,10,.5); }
 @media (max-width: 520px) { .promo { grid-template-columns: 1fr; } .promo-photo { width: 100%; max-height: 170px; order: -1; } }
 .btn-danger { color: #a3271c; border-color: #e7c2bd; } .btn-danger:hover { background: #fbeeec; } .link-danger { color: #a3271c; }
+/* Shiprocket admin box + product delivery checker */
+.sr-box { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--line, #e6e0d4); border-radius: 12px; background: #fff; }
+.sr-box > div:first-child { display: grid; gap: 2px; }
+.pin-check { display: grid; gap: 8px; padding: 14px 16px; border: 1px solid var(--line, #e6e0d4); border-radius: 12px; background: #fff; }
+.pin-check form { display: flex; gap: 8px; } .pin-check .input { flex: 1; min-width: 0; }
+.pin-check p { margin: 0; font-size: 14px; } .pin-check .ok { color: var(--leaf, #2f6b3a); } .pin-check .no { color: #b3261e; }

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getProduct, getProducts, getConcerns } from '@/lib/data';
 import { Gallery, ProductBuy } from '@/components/ProductBuy';
+import { PinCheck } from '@/components/PinCheck';
 import { ProductCard } from '@/components/ProductCard';
 import { SITE_URL } from '@/lib/format';
 
@@ -38,6 +39,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
         <Gallery p={p} />
         <div style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
           <ProductBuy p={p} pairWith={carrier} />
+          <PinCheck />
           <dl className="facts">{facts.map(([k, x]) => <div key={k}><dt>{k}</dt><dd>{x}</dd></div>)}</dl>
           {p.safety && <div className="safety" role="note"><strong>Safety &amp; dilution</strong>{p.safety}</div>}
           <div>
