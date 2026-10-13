@@ -6,13 +6,12 @@ import { track } from '@/lib/attribution';
 import { CloseIcon } from './Icons';
 import { BRAND } from '@/lib/brand';
 
-const KEY = 'ek_offer_seen';
+const CLAIMED = 'ek_offer_claimed';
 const DELAY = 2000;
 const DEFAULT = { title: '10% off your first order', body: 'Join for safe-use guides, blending tips and early access to new oils.', code: 'WELCOME10' };
 const BLOCKED = ['/checkout', '/cart', '/order', '/admin', '/account'];
 
-// First-visit offer (HOME-011 / LEAD-004): shows once per browser, 2s after landing,
-// never on cart/checkout/order pages, and never again once closed or claimed.
+// Welcome offer (HOME-011 / LEAD-004): never on cart/checkout/order/account/admin pages.
 export function OfferPopup() {
   const path = usePathname();
   const [open, setOpen] = useState(false);
@@ -26,13 +25,16 @@ export function OfferPopup() {
   useEffect(() => { fetch('/api/promotions').then(r => r.json()).then(d => d.popup && setCfg({ title: d.popup.title, body: d.popup.body ?? DEFAULT.body, code: d.popup.coupon_code ?? DEFAULT.code })).catch(() => {}); }, []);
   const CODE = cfg.code;
 
+  // Shows 2s after every page load / visit. Closing hides it until the next visit or refresh;
+  // in-site navigation doesn't re-open it. People who already claimed the code aren't shown it again.
+  const shown = useRef(false);
   useEffect(() => {
-    if (BLOCKED.some(b => path.startsWith(b))) return;
-    let seen = true;
-    try { seen = !!localStorage.getItem(KEY); } catch { /* storage blocked → don't nag */ }
-    if (seen) return;
+    if (shown.current || BLOCKED.some(b => path.startsWith(b))) return;
+    let claimed = false;
+    try { claimed = !!localStorage.getItem(CLAIMED); } catch { /* storage blocked */ }
+    if (claimed) return;
     const t = setTimeout(() => {
-      try { localStorage.setItem(KEY, new Date().toISOString()); } catch {}
+      shown.current = true;
       setOpen(true); track('view_promotion', { promotion_id: 'welcome10_popup' });
     }, DELAY);
     return () => clearTimeout(t);
@@ -66,7 +68,7 @@ export function OfferPopup() {
               if (!email && !phone) return setErr('Enter your email or WhatsApp number.');
               if (phone && !/^[6-9]\d{9}$/.test(phone)) return setErr('Enter a valid 10-digit mobile number.');
               setBusy(true);
-              try { await submitLead({ source: 'welcome_popup', email: email || undefined, phone: phone || undefined, consent }); setStep('done'); }
+              try { await submitLead({ source: 'welcome_popup', email: email || undefined, phone: phone || undefined, consent }); setStep('done'); try { localStorage.setItem(CLAIMED, new Date().toISOString()); } catch {} }
               catch { setErr(`Something went wrong. Your code is ${CODE}.`); setStep('done'); }
               setBusy(false);
             }} className="offer-form">
