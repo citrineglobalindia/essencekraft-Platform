@@ -34,6 +34,26 @@ export default function EditProduct({ params }: { params: { id: string } }) {
     setP(s => ({ ...s, [k]: e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value, ...(k === 'name' && isNew ? { slug: slugify(e.target.value) } : {}) }));
   const setV = (i: number, k: keyof Variant, v: unknown) => setVars(vs => vs.map((x, j) => j === i ? { ...x, [k]: v } : x));
 
+  // Delete a size. Unsaved rows just leave the list; saved rows are deleted right away.
+  // Past orders keep their own copy of name/size/SKU/price, so invoices and order history are unaffected.
+  const removeVariant = async (i: number) => {
+    const v = vars[i]; if (!v) return;
+    if (vars.length <= 1) return setMsg({ t: 'error', m: 'A product needs at least one size. Add another size first, or archive the product.' });
+    if (!v.id) { setVars(x => x.filter((_, j) => j !== i)); return; }
+    const { count } = await db().from('order_items').select('id', { count: 'exact', head: true }).eq('variant_id', v.id);
+    const label = v.label || v.sku;
+    if (!confirm(`Delete the “${label}” size (${v.sku}) from ${p.name}?` + ((count ?? 0) > 0 ? `\n\nIt appears in ${count} past order${count === 1 ? '' : 's'} — those orders and invoices stay unchanged.` : '') + `\n\nIts stock (${v.stock}) and stock history will be removed. This can’t be undone.`)) return;
+    setBusy(true); setMsg(null);
+    const { error } = await db().from('variants').delete().eq('id', v.id);
+    if (error) { setBusy(false); return setMsg({ t: 'error', m: error.message }); }
+    const rest = vars.filter((_, j) => j !== i);
+    for (const [k, x] of rest.entries()) if (x.id && x.sort !== k) await db().from('variants').update({ sort: k }).eq('id', x.id);
+    setVars(rest.map((x, k) => ({ ...x, sort: k })));
+    await db().from('audit_log').insert({ action: 'variant.delete', entity: 'product', entity_id: params.id, detail: { name: p.name, sku: v.sku, label } }).then(() => {}, () => {});
+    await refreshStore(p.slug);
+    setBusy(false); setMsg({ t: 'ok', m: `“${label}” size deleted.` });
+  };
+
   const upload = async (file: File) => {
     const path = `${p.slug || 'product'}/${Date.now()}-${file.name.replace(/[^a-z0-9.]/gi, '-')}`;
     const { error } = await db().storage.from('product-images').upload(path, file, { cacheControl: '31536000' });
@@ -111,7 +131,7 @@ export default function EditProduct({ params }: { params: { id: string } }) {
           <td>{v._new ? <input className="input" style={{ width: 80 }} type="number" min={0} value={v._initial ?? 0} onChange={e => setV(i, '_initial', Number(e.target.value))} aria-label="Opening stock" /> : <Link className="link" href={`/admin/inventory?sku=${v.sku}`}>{v.stock}</Link>}</td>
           <td><input className="input" style={{ width: 80 }} type="number" min={0} value={v.low_stock_threshold} onChange={e => setV(i, 'low_stock_threshold', Number(e.target.value))} aria-label="Low stock threshold" /></td>
           <td><input type="checkbox" checked={v.allow_backorder} onChange={e => setV(i, 'allow_backorder', e.target.checked)} aria-label="Allow backorder" /></td>
-          <td>{v._new && <button className="link" onClick={() => setVars(x => x.filter((_, j) => j !== i))}>Remove</button>}</td>
+          <td>{vars.length > 1 && <button className="link link-danger" disabled={busy} onClick={() => removeVariant(i)} aria-label={`Delete variant ${v.label || v.sku}`}>Delete</button>}</td>
         </tr>)}</tbody></table></div>
       <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>Stock for saved variants is changed in Inventory so every movement is logged.</p>
     </section>
