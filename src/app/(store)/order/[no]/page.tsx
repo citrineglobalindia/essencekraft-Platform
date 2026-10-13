@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { hasSupabase, browserClient } from '@/lib/supabase';
-import { inr } from '@/lib/format';
+import { inr, WHATSAPP } from '@/lib/format';
 import { payOrder } from '@/lib/pay';
 import { track } from '@/lib/attribution';
 
@@ -48,7 +48,7 @@ export default function OrderPage({ params }: { params: { no: string } }) {
             <p style={{ margin: '8px 0 14px' }}>Order <b>{o.order_no}</b> is saved and your items are held for 45 minutes. You won’t be charged twice.</p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button className="btn btn-primary" disabled={paying} onClick={async () => { setPaying(true); await payOrder(o.order_no, token).catch(() => false); await load(); setPaying(false); }}>{paying ? 'Opening payment…' : `Retry payment · ${inr(o.total)}`}</button>
-              <a className="btn btn-ghost" href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=${encodeURIComponent(`Help with order ${o.order_no}`)}`} data-track="whatsapp_click">Get help on WhatsApp</a>
+              <a className="btn btn-ghost" href={`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Help with order ${o.order_no}`)}`} data-track="whatsapp_click">Get help on WhatsApp</a>
             </div>
           </> : <>
             <h1 style={{ fontSize: '1.8rem' }}>{o.status === 'cancelled' ? 'Order cancelled' : 'Thank you, your order is placed'}</h1>

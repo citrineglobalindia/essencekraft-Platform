@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { db, isDemo } from '@/lib/admin';
 import { PageHead, Saved } from '@/components/AdminUI';
+import { WHATSAPP } from '@/lib/format';
 
 type S = { free_shipping_min: number; shipping_flat: number; cod_fee: number; support_email: string; whatsapp: string; legal_name: string; gstin: string; address: string; [k: string]: unknown };
 const DEF: S = { sr_auto: false, sr_pickup: 'Home-1', sr_pickup_pincode: '570020', sr_weight: 0.2, sr_l: 10, sr_b: 6, sr_h: 6, free_shipping_min: 999, shipping_flat: 79, cod_fee: 49, support_email: '', whatsapp: '', legal_name: 'EssenceKraft', gstin: '', address: '' };
@@ -33,7 +34,7 @@ export default function Settings() {
           <tr><td><b>Razorpay</b> — UPI, cards, net banking</td><td><span className="pill grey">Check in Vercel</span></td></tr>
           <tr><td><b>Google Tag Manager</b> — GA4, Ads, Meta Pixel</td><td>{ok(!!process.env.NEXT_PUBLIC_GTM_ID)}</td></tr>
           <tr><td><b>Shiprocket</b> — shipping, labels, tracking</td><td><span className="pill grey">Check in Vercel</span></td></tr>
-          <tr><td><b>WhatsApp</b> — chat button & order help</td><td>{ok(!!process.env.NEXT_PUBLIC_WHATSAPP_NUMBER)}</td></tr>
+          <tr><td><b>WhatsApp</b> — chat button & order help</td><td><span className="pill green">+{WHATSAPP.slice(0, 2)} {WHATSAPP.slice(2)}</span></td></tr>
         </tbody></table></div></section>
     </div>
   </>;

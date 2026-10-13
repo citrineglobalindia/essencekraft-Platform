@@ -18,13 +18,14 @@ type O = { id: string; order_no: string; full_name: string; email: string; phone
   status: string; payment_status: string; payment_method: string; payment_ref: string | null; tracking_url: string | null; courier: string | null; awb: string | null; expected_delivery: string | null; invoice_no: string | null; notes: string | null; marketing_consent: boolean; created_at: string;
   first_touch: Record<string, string> | null; last_touch: Record<string, string> | null; order_items: Item[]; order_events?: { id: number; status: string; note: string | null; created_at: string }[] };
 const COURIERS: Record<string, (awb: string) => string> = { Delhivery: a => `https://www.delhivery.com/track/package/${a}`, 'Blue Dart': a => `https://www.bluedart.com/web/guest/trackdartresult?trackFor=0&trackNo=${a}`, DTDC: a => `https://www.dtdc.in/tracking.asp?strCnno=${a}`, 'India Post': a => `https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx?cn=${a}`, Shiprocket: a => `https://shiprocket.co/tracking/${a}`, Xpressbees: a => `https://www.xpressbees.com/shipment/tracking?awbNo=${a}`, Ekart: a => `https://ekartlogistics.com/shipmenttrack/${a}`, Other: () => '' };
+const linkFor = (courier: string, awb: string, fallback: string) => (COURIERS[courier] ? COURIERS[courier](awb) : fallback);
 const NEXT: Record<string, string[]> = { placed: ['confirmed', 'cancelled'], confirmed: ['packed', 'cancelled'], packed: ['shipped', 'cancelled'], shipped: ['delivered', 'returned'], delivered: ['returned'], cancelled: [], returned: [] };
 
 export default function OrderDetail({ params }: { params: { id: string } }) {
   const [o, setO] = useState<O | null>(null); const [track, setTrack] = useState(''); const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
   const [ship, setShip] = useState({ courier: 'Delhivery', awb: '', expected: '' }); const [saved, setSaved] = useState('');
   const load = useCallback(() => db().from('orders').select('*, order_items(*), order_events(*)').eq('id', params.id).single().then(({ data }) => { const d = data as O; setO(d); setTrack(d?.tracking_url ?? ''); setShip({ courier: d?.courier ?? 'Delhivery', awb: d?.awb ?? '', expected: d?.expected_delivery ?? '' }); }), [params.id]);
-  const saveShip = async () => { if (!o) return; const url = ship.awb ? (COURIERS[ship.courier]?.(ship.awb) || track) : track;
+  const saveShip = async () => { if (!o) return; const url = ship.awb ? linkFor(ship.courier, ship.awb, track) : track;
     const { error } = await db().from('orders').update({ courier: ship.courier, awb: ship.awb || null, expected_delivery: ship.expected || null, tracking_url: url || null }).eq('id', o.id);
     if (error) setErr(error.message); else { setSaved('Shipment details saved — the customer’s tracking page updates now.'); load(); } };
   const [sr, setSr] = useState<{ busy: string; msg: string; err: boolean }>({ busy: '', msg: '', err: false });
@@ -77,10 +78,10 @@ export default function OrderDetail({ params }: { params: { id: string } }) {
         </div>
         <small className="muted">Or enter shipment details manually:</small>
         <div className="form-grid two">
-          <div className="field"><label htmlFor="cour">Courier</label><select id="cour" className="select" value={ship.courier} onChange={e => setShip({ ...ship, courier: e.target.value })}>{Object.keys(COURIERS).map(c => <option key={c}>{c}</option>)}</select></div>
+          <div className="field"><label htmlFor="cour">Courier</label><select id="cour" className="select" value={ship.courier} onChange={e => setShip({ ...ship, courier: e.target.value })}>{[...(ship.courier && !COURIERS[ship.courier] ? [ship.courier] : []), ...Object.keys(COURIERS)].map(c => <option key={c}>{c}</option>)}</select></div>
           <div className="field"><label htmlFor="awb">AWB / tracking no.</label><input id="awb" className="input" value={ship.awb} onChange={e => setShip({ ...ship, awb: e.target.value.trim() })} /></div>
           <div className="field"><label htmlFor="eta">Expected delivery</label><input id="eta" type="date" className="input" value={ship.expected} onChange={e => setShip({ ...ship, expected: e.target.value })} /></div>
-          <div className="field"><label htmlFor="trk">Tracking link {ship.courier !== 'Other' && <small className="muted">(auto from AWB)</small>}</label><input id="trk" className="input" value={ship.awb && ship.courier !== 'Other' ? COURIERS[ship.courier](ship.awb) : track} onChange={e => setTrack(e.target.value)} readOnly={!!ship.awb && ship.courier !== 'Other'} placeholder="https://…" /></div>
+          <div className="field"><label htmlFor="trk">Tracking link {ship.courier !== 'Other' && <small className="muted">(auto from AWB)</small>}</label><input id="trk" className="input" value={ship.awb && COURIERS[ship.courier] && ship.courier !== 'Other' ? COURIERS[ship.courier](ship.awb) : track} onChange={e => setTrack(e.target.value)} readOnly={!!ship.awb && !!COURIERS[ship.courier] && ship.courier !== 'Other'} placeholder="https://…" /></div>
         </div>
         <button className="btn btn-ghost btn-sm" style={{ justifySelf: 'start' }} onClick={saveShip}>Save shipment details</button>{saved && <p className="notice ok">{saved}</p>}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

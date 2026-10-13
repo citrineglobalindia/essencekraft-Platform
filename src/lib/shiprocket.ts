@@ -55,6 +55,8 @@ export async function shipOrder(orderId: string) {
   if (error || !o) throw new Error('Order not found');
   if (o.status === 'cancelled' || o.status === 'returned') throw new Error(`Order is ${o.status}.`);
   if (o.payment_method !== 'cod' && o.payment_status !== 'paid') throw new Error('Online payment not received yet — only paid or COD orders can be shipped.');
+  const ph = String(o.phone ?? '').replace(/\D/g, '').slice(-10);
+  if (!/^[6-9]\d{9}$/.test(ph) || /^(\d)\1{9}$/.test(ph)) throw new Error(`Customer phone “${o.phone}” isn’t a valid Indian mobile number, so couriers can’t accept it. Correct it with the customer first.`);
   const cfg = await shipCfg();
   let s = await findShipment(o.order_no);
   if (!s) {
