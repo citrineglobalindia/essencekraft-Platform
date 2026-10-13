@@ -891,3 +891,9 @@ tr:last-child td { border-bottom: 0; }
 .pin-check { display: grid; gap: 8px; padding: 14px 16px; border: 1px solid var(--line, #e6e0d4); border-radius: 12px; background: #fff; }
 .pin-check form { display: flex; gap: 8px; } .pin-check .input { flex: 1; min-width: 0; }
 .pin-check p { margin: 0; font-size: 14px; } .pin-check .ok { color: var(--leaf, #2f6b3a); } .pin-check .no { color: #b3261e; }
+/* Team page */
+.team-row { grid-template-columns: auto 1fr auto !important; align-items: start; }
+.team-row small { display: block; margin-top: 2px; }
+.team-actions { display: grid; gap: 6px; justify-items: end; }
+@media (max-width: 639px) { .team-row { grid-template-columns: auto 1fr !important; } .team-actions { grid-column: 1 / -1; justify-items: start; grid-auto-flow: column; justify-content: start; align-items: center; gap: 12px; } }
+.adm-noaccess { max-width: 520px; margin: 40px auto; text-align: center; display: grid; gap: 12px; justify-items: center; }

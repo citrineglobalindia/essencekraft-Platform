@@ -1,29 +1,58 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { db } from '@/lib/admin';
+import { browserClient, hasSupabase } from '@/lib/supabase';
+import { fmtDate } from '@/lib/admin';
+import { ROLE_INFO } from '@/lib/roles';
 import { PageHead, Saved } from '@/components/AdminUI';
 
-type U = { id: string; full_name: string | null; email?: string; role: string };
-const ROLES: [string, string][] = [['admin', 'Everything, including team & settings'], ['inventory', 'Products and stock'], ['marketing', 'Coupons, leads, content, SEO, reviews'], ['staff', 'Orders and customers'], ['customer', 'No admin access']];
+type M = { id: string; full_name: string | null; email: string; role: string; last_sign_in_at: string | null; invited_at: string | null; pending: boolean };
+async function api(method: string, body?: unknown) {
+  const { data } = await browserClient().auth.getSession();
+  const r = await fetch('/api/team', { method, headers: { 'content-type': 'application/json', authorization: `Bearer ${data.session?.access_token ?? ''}` }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error ?? `Request failed (${r.status})`); return j;
+}
+
 export default function Team() {
-  const [rows, setRows] = useState<U[]>([]); const [msg, setMsg] = useState<{ t: 'ok' | 'error'; m: string } | null>(null);
-  const load = useCallback(() => db().from('profiles').select('*').neq('role', 'customer').order('role').then(({ data }) => setRows((data ?? []) as U[])), []);
-  useEffect(() => { load(); }, [load]);
-  const setRole = async (u: U, role: string) => { if (u.role === 'admin' && rows.filter(r => r.role === 'admin').length === 1 && role !== 'admin') return setMsg({ t: 'error', m: 'At least one admin is required.' });
-    const { error } = await db().from('profiles').update({ role }).eq('id', u.id); setMsg(error ? { t: 'error', m: error.message } : { t: 'ok', m: `${u.full_name ?? u.email} is now ${role}.` }); load(); };
+  const [rows, setRows] = useState<M[] | null>(null); const [me, setMe] = useState('');
+  const [msg, setMsg] = useState<{ t: 'ok' | 'error'; m: string } | null>(null);
+  const [f, setF] = useState({ full_name: '', email: '', role: 'staff' }); const [busy, setBusy] = useState('');
+  const load = useCallback(() => api('GET').then(j => setRows(j.rows)).catch(e => { setRows([]); setMsg({ t: 'error', m: e.message }); }), []);
+  useEffect(() => { if (!hasSupabase) { setRows([]); return; } load(); browserClient().auth.getUser().then(({ data }) => setMe(data.user?.id ?? '')); }, [load]);
+  const run = async (key: string, fn: () => Promise<string>) => { setBusy(key); setMsg(null); try { setMsg({ t: 'ok', m: await fn() }); await load(); } catch (e) { setMsg({ t: 'error', m: e instanceof Error ? e.message : 'Failed' }); } setBusy(''); };
+  const invite = (e: React.FormEvent) => { e.preventDefault(); run('invite', async () => { const j = await api('POST', f); setF({ full_name: '', email: '', role: f.role });
+    return j.invited ? `Invite sent to ${f.email}. They’ll set a password from the email.` : `${f.email} already had an account — role set to ${f.role}${j.emailed ? ' and they’ve been emailed' : ''}.`; }); };
+  const label = (r: string) => ROLE_INFO.find(x => x[0] === r)?.[1] ?? r;
+
   return <>
-    <PageHead title="Team & roles" sub="Least-privilege access: give each person only what their job needs." />
+    <PageHead title="Team & roles" sub="Invite people by email and give each person only the access their job needs." />
     <Saved msg={msg} />
     <div className="adm-2col">
-      <section className="adm-card"><div className="adm-card-h"><div><h3>Members</h3><p>{rows.length} people with admin access</p></div></div>
-        <div className="adm-list">{rows.map(u => <div key={u.id} className="adm-li static" style={{ gridTemplateColumns: 'auto 1fr auto' }}>
-          <span className="adm-av">{(u.full_name ?? u.email ?? '?').slice(0, 2).toUpperCase()}</span><div><b>{u.full_name ?? '—'}</b><small>{u.email ?? u.id}</small></div>
-          <select className="select" style={{ width: 'auto', minHeight: 36 }} value={u.role} onChange={e => setRole(u, e.target.value)} aria-label={`Role for ${u.full_name}`}>{ROLES.map(([r]) => <option key={r}>{r}</option>)}</select></div>)}</div>
+      <section className="adm-card"><div className="adm-card-h"><div><h3>Invite a team member</h3><p>They get an email to set their password, then sign in at /admin.</p></div></div>
+        <form onSubmit={invite} className="form-grid">
+          <div className="form-grid two">
+            <div className="field"><label htmlFor="tn">Name</label><input id="tn" className="input" value={f.full_name} onChange={e => setF({ ...f, full_name: e.target.value })} placeholder="Full name" /></div>
+            <div className="field"><label htmlFor="te">Email</label><input id="te" type="email" required className="input" value={f.email} onChange={e => setF({ ...f, email: e.target.value })} placeholder="name@example.com" /></div>
+          </div>
+          <div className="field"><label htmlFor="tr">Role</label><select id="tr" className="select" value={f.role} onChange={e => setF({ ...f, role: e.target.value })}>{ROLE_INFO.map(([r, l, d]) => <option key={r} value={r}>{l} — {d}</option>)}</select></div>
+          <button className="btn btn-primary" style={{ justifySelf: 'start' }} disabled={busy === 'invite'}>{busy === 'invite' ? 'Sending…' : 'Send invite'}</button>
+        </form>
+        <h3 style={{ fontSize: 14, margin: '18px 0 8px', fontFamily: 'var(--font-body)' }}>What each role can do</h3>
+        <ul className="adm-legend">{ROLE_INFO.map(([r, l, d]) => <li key={r} style={{ textTransform: 'none' }}><span className="pill" style={{ minWidth: 120, textAlign: 'center' }}>{l}</span>{d}</li>)}</ul>
       </section>
-      <section className="adm-card"><div className="adm-card-h"><div><h3>Adding someone</h3></div></div>
-        <ol style={{ paddingLeft: 18, display: 'grid', gap: 8, fontSize: 14 }}><li>Ask them to sign up once at <code>/admin/login</code> (or invite them from Supabase → Authentication).</li><li>Set their role here — they get access on their next page load.</li><li>Turn on two-step login for admins in Supabase → Authentication → MFA.</li></ol>
-        <h3 style={{ fontSize: 14, margin: '16px 0 8px', fontFamily: 'var(--font-body)' }}>What each role can do</h3>
-        <ul className="adm-legend">{ROLES.map(([r, d]) => <li key={r} style={{ textTransform: 'none' }}><span className="pill" style={{ minWidth: 84, textAlign: 'center' }}>{r}</span>{d}</li>)}</ul>
+      <section className="adm-card"><div className="adm-card-h"><div><h3>Members</h3><p>{rows ? `${rows.length} ${rows.length === 1 ? 'person has' : 'people have'} admin access` : 'Loading…'}</p></div></div>
+        <div className="adm-list">{(rows ?? []).map(u => <div key={u.id} className="adm-li static team-row">
+          <span className="adm-av">{(u.full_name || u.email || '?').slice(0, 2).toUpperCase()}</span>
+          <div style={{ minWidth: 0 }}><b>{u.full_name || u.email}{u.id === me && <small className="muted"> (you)</small>}</b><small style={{ overflowWrap: 'anywhere' }}>{u.email}</small>
+            <small>{u.pending ? <span className="pill amber">Invite pending</span> : `Last sign-in ${fmtDate(u.last_sign_in_at!)}`}</small></div>
+          <div className="team-actions">
+            <select className="select" style={{ width: 'auto', minHeight: 36 }} value={u.role} disabled={!!busy} aria-label={`Role for ${u.full_name || u.email}`}
+              onChange={e => { const role = e.target.value; run(u.id, async () => { await api('PATCH', { id: u.id, role }); return `${u.full_name || u.email} is now ${label(role)}.`; }); }}>
+              {ROLE_INFO.map(([r, l]) => <option key={r} value={r}>{l}</option>)}</select>
+            {u.pending && <button className="link" disabled={!!busy} onClick={() => run(u.id, async () => { await api('POST', { email: u.email, full_name: u.full_name, resend: true }); return `Invite re-sent to ${u.email}.`; })}>Resend invite</button>}
+            {u.id !== me && <button className="link link-danger" disabled={!!busy} onClick={() => { if (!confirm(`Remove admin access for ${u.full_name || u.email}? Their customer account (if any) stays.`)) return; run(u.id, async () => { await api('PATCH', { id: u.id, role: 'customer' }); return `${u.full_name || u.email} no longer has admin access.`; }); }}>Remove access</button>}
+          </div></div>)}
+          {rows && !rows.length && <p className="muted">No team members yet.</p>}</div>
+        <p className="muted" style={{ fontSize: 12.5, marginTop: 12 }}>Changes apply on the person’s next page load. Tip: turn on two-step login for admins in Supabase → Authentication → MFA.</p>
       </section>
     </div>
   </>;

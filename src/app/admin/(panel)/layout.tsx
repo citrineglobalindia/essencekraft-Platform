@@ -4,6 +4,7 @@ import { BRAND } from '@/lib/brand';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { db, isDemo } from '@/lib/admin';
+import { canOpen, isStaffRole, ROLE_INFO } from '@/lib/roles';
 import { BoxIcon, ChartIcon, LayersIcon, TagIcon, UsersIcon, CartIcon, SearchIcon } from '@/components/Icons';
 
 const ic = (d: string) => function I({ size = 18 }: { size?: number }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>; };
@@ -38,12 +39,17 @@ export default function Panel({ children }: { children: React.ReactNode }) {
     db().auth.getUser().then(async ({ data }) => {
       if (!data.user) return router.replace('/admin/login');
       const { data: p } = await db().from('profiles').select('role').eq('id', data.user.id).maybeSingle();
-      setMe({ email: data.user.email ?? '', role: p?.role ?? 'customer' });
+      const role = p?.role ?? 'customer';
+      if (!isDemo && !isStaffRole(role)) { await db().auth.signOut(); return router.replace('/admin/login?denied=1'); }
+      setMe({ email: data.user.email ?? '', role });
     });
     db().from('variants').select('stock,low_stock_threshold').then(({ data }) => setLow((data ?? []).filter(v => v.stock <= v.low_stock_threshold).length));
     db().from('orders').select('id', { count: 'exact', head: true }).eq('status', 'placed').then(({ count }) => setPending(count ?? 0));
     db().from('reviews').select('id', { count: 'exact', head: true }).eq('status', 'pending').then(({ count }) => setRev(count ?? 0));
   }, [router, path]);
+  const allowed = (href: string) => isDemo || !me || canOpen(me.role, href);
+  const groups = GROUPS.map(([g, l]) => [g, l.filter(([h]) => allowed(h))] as [string, Item[]]).filter(([, l]) => l.length);
+  const blocked = !isDemo && !!me && !canOpen(me.role, path);
   const current = (href: string) => href === '/admin' ? path === '/admin' : path.startsWith(href);
   const title = ALL.find(([h]) => current(h))?.[1] ?? 'Admin';
   const badge = (h: string) => h === '/admin/orders' && pending ? pending : h === '/admin/inventory' && low ? low : h === '/admin/reviews' && rev ? rev : 0;
@@ -53,13 +59,13 @@ export default function Panel({ children }: { children: React.ReactNode }) {
       <aside className="adm-side">
         <Link href="/admin" className="adm-brand"><span><img src={BRAND.mark.replace('logo-mark-dark', 'logo-mark-light')} alt="" width={18} height={26} style={{ height: 26, width: 'auto' }} /></span><div><b>EssenceKraft</b><small>Admin console</small></div></Link>
         <nav aria-label="Admin">
-          {GROUPS.map(([g, links]) => <div key={g} className="adm-group"><p>{g}</p>
+          {groups.map(([g, links]) => <div key={g} className="adm-group"><p>{g}</p>
             {links.map(([href, label, Icon]) => <Link key={href} href={href} aria-current={current(href) ? 'page' : undefined}><Icon size={18} /><span>{label}</span>{badge(href) > 0 && <em>{badge(href)}</em>}</Link>)}
           </div>)}
         </nav>
         <div className="adm-side-foot">
           <Link href="/" target="_blank">View store ↗</Link>
-          {me && <div className="adm-me"><span>{initials}</span><div><b>{me.email}</b><small>{me.role}</small></div></div>}
+          {me && <div className="adm-me"><span>{initials}</span><div><b>{me.email}</b><small>{ROLE_INFO.find(r => r[0] === me.role)?.[1] ?? me.role}</small></div></div>}
         </div>
       </aside>
       <div className="adm-body">
@@ -74,8 +80,8 @@ export default function Panel({ children }: { children: React.ReactNode }) {
             <button className="adm-avatar" title="Sign out" onClick={async () => { await db().auth.signOut(); router.replace('/admin/login'); }}>{initials}</button>
           </div>
         </header>
-        <nav className="adm-tabs" aria-label="Admin sections">{ALL.map(([href, label]) => <Link key={href} href={href} aria-current={current(href) ? 'page' : undefined}>{label}{badge(href) > 0 && <em>{badge(href)}</em>}</Link>)}</nav>
-        <main className="adm-main">{children}</main>
+        <nav className="adm-tabs" aria-label="Admin sections">{ALL.filter(([h]) => allowed(h)).map(([href, label]) => <Link key={href} href={href} aria-current={current(href) ? 'page' : undefined}>{label}{badge(href) > 0 && <em>{badge(href)}</em>}</Link>)}</nav>
+        <main className="adm-main">{!me && !isDemo ? <p className="muted">Loading…</p> : blocked ? <div className="adm-noaccess"><h2>No access to this section</h2><p className="muted">Your role ({ROLE_INFO.find(r => r[0] === me?.role)?.[1] ?? me?.role}) doesn’t include this page. Ask an admin if you need it.</p><Link className="btn btn-primary" href="/admin">Go to dashboard</Link></div> : children}</main>
       </div>
     </div>
   );

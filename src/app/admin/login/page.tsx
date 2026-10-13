@@ -21,12 +21,12 @@ function Login() {
       <div className="field"><label htmlFor="email">Email</label><input id="email" name="email" type="email" className="input" autoComplete="username" required /></div>
       <div className="field"><label htmlFor="pw">Password</label><input id="pw" name="password" type="password" className="input" autoComplete="current-password" required minLength={8} /></div>
       {err && <p className="notice error" role="alert">{err}</p>}
-      {sent && <p className="notice ok">Check your inbox for a reset link.</p>}
+      {sent && <p className="notice ok">If this email belongs to a team member, a reset link is on its way.</p>}
       <button className="btn btn-primary" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
       <button type="button" className="link" style={{ justifySelf: 'start' }} onClick={async () => {
         const email = (document.getElementById('email') as HTMLInputElement).value;
         if (!email) { setErr('Enter your email first.'); return; }
-        await browserClient().auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}/admin/login` }); setSent(true);
+        await fetch('/api/auth/admin-reset', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email }) }); setSent(true);
       }}>Forgot password?</button>
     </form>
   );
