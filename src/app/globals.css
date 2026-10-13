@@ -238,28 +238,37 @@ p { margin: 0; }
 }
 
 /* Welcome offer popup */
-.offer-wrap { position: fixed; inset: 0; z-index: 80; background: rgba(15,30,24,.5); display: grid; place-items: center; padding: 16px; animation: fade .2s ease-out; }
-@keyframes fade { from { opacity: 0; } }
-@keyframes rise { from { transform: translateY(24px); opacity: 0; } }
-.offer { position: relative; width: min(760px, 100%); max-height: calc(100dvh - 32px); overflow: auto; background: var(--canvas); border-radius: 20px; display: grid; grid-template-columns: 1fr 1.25fr; box-shadow: 0 20px 60px rgba(0,0,0,.25); animation: rise .25s ease-out; }
-.offer-x { position: absolute; top: 8px; right: 8px; z-index: 2; background: rgba(255,255,255,.8); }
-.offer-art { background: linear-gradient(160deg, #efe7d6, #e2dcc6); display: flex; align-items: flex-end; justify-content: center; gap: 0; padding: 32px 16px 0; min-height: 200px; }
-.offer-art svg { width: 38%; filter: drop-shadow(0 12px 14px rgba(60,40,20,.25)); }
-.offer-art svg + svg { margin-left: -6%; transform: translateY(8px); }
-.offer-body { padding: 28px 24px 22px; display: grid; gap: 12px; align-content: center; }
-.offer-body h2 { font-size: clamp(1.6rem, 4vw, 2.1rem); }
+.offer-wrap { position: fixed; inset: 0; z-index: 80; background: rgba(15,30,24,.55); display: grid; place-items: center; padding: 16px; animation: fade .2s ease-out; }
+.offer { position: relative; width: min(720px, 100%); max-height: calc(100dvh - 32px); overflow: hidden; background: var(--canvas); border-radius: 20px; display: grid; grid-template-columns: 0.9fr 1.1fr; box-shadow: 0 24px 64px rgba(0,0,0,.28); animation: rise .25s ease-out; }
+.offer-x { position: absolute; top: 12px; right: 12px; z-index: 3; width: 34px; height: 34px; min-width: 0; padding: 0; border: 0; border-radius: 50%; background: rgba(255,255,255,.92); color: var(--forest); box-shadow: 0 2px 8px rgba(0,0,0,.12); display: grid; place-items: center; }
+.offer-x svg { width: 18px; height: 18px; }
+.offer-x:hover { background: #fff; }
+.offer-x:focus:not(:focus-visible) { outline: none; }
+.offer-art { position: relative; overflow: hidden; background: #e9e1cf; min-height: 100%; }
+.offer-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.offer-badge { position: absolute; left: 16px; bottom: 16px; display: grid; place-items: center; width: 74px; height: 74px; border-radius: 50%; background: var(--forest); color: #f3ecdf; font-size: 11px; font-weight: 700; letter-spacing: .14em; line-height: 1; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+.offer-badge b { font-family: var(--serif, inherit); font-size: 24px; letter-spacing: 0; margin-bottom: -10px; }
+.offer-body { padding: 30px 26px 22px; display: grid; gap: 12px; align-content: center; overflow-y: auto; max-height: calc(100dvh - 32px); }
+.offer-body h2 { font-size: clamp(1.5rem, 3.2vw, 2rem); line-height: 1.12; padding-right: 28px; }
+.offer-body > p { margin: 0; font-size: 14.5px; }
 .offer-form { display: grid; gap: 10px; }
-.offer-form .check { font-size: 12.5px; color: var(--muted); }
+.offer-form .check { font-size: 12.5px; color: var(--muted); align-items: flex-start; }
 .offer-skip { justify-self: center; font-size: 13px; color: var(--muted); font-weight: 500; }
+@media (max-height: 600px) and (min-width: 721px) {
+  .offer-body { padding: 20px 22px 16px; gap: 9px; }
+  .offer-body h2 { font-size: 1.5rem; }
+  .offer-form .input { height: 42px; }
+}
 .offer-code { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 14px 16px; border: 2px dashed var(--leaf); border-radius: var(--r-md); background: #fff; cursor: pointer; }
 .offer-code b { font-size: 22px; letter-spacing: .12em; color: var(--forest); }
 .offer-code span { font-size: 13px; color: var(--leaf); font-weight: 600; }
 @media (max-width: 639px) {
   .offer-wrap { place-items: end stretch; padding: 0; }
-  .offer { grid-template-columns: 1fr; border-radius: 20px 20px 0 0; max-height: 92dvh; padding-bottom: env(safe-area-inset-bottom); }
-  .offer-art { min-height: 0; height: 130px; padding-top: 18px; }
-  .offer-art svg { width: 22%; }
-  .offer-body { padding: 18px 18px 16px; gap: 10px; }
+  .offer { grid-template-columns: 1fr; border-radius: 20px 20px 0 0; max-height: 92dvh; overflow-y: auto; padding-bottom: env(safe-area-inset-bottom); }
+  .offer-art { min-height: 0; height: 150px; }
+  .offer-art img { object-position: 30% 70%; }
+  .offer-badge { width: 60px; height: 60px; left: 14px; bottom: 12px; } .offer-badge b { font-size: 19px; margin-bottom: -8px; }
+  .offer-body { padding: 18px 18px 16px; gap: 10px; max-height: none; overflow: visible; }
 }
 
 /* About page */

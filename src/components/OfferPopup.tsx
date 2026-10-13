@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { submitLead } from './LeadForm';
 import { track } from '@/lib/attribution';
 import { CloseIcon } from './Icons';
-import { Bottle } from './Bottle';
+import { BRAND } from '@/lib/brand';
 
 const KEY = 'ek_offer_seen';
 const DELAY = 2000;
@@ -53,7 +53,7 @@ export function OfferPopup() {
     <div className="offer-wrap" onClick={e => e.target === e.currentTarget && setOpen(false)}>
       <div className="offer" role="dialog" aria-modal="true" aria-labelledby="offer-h">
         <button ref={closeBtn} className="icon-btn offer-x" aria-label="Close offer" onClick={() => setOpen(false)}><CloseIcon /></button>
-        <div className="offer-art" aria-hidden><Bottle color="#7a5a9e" label="Lavender Essential Oil" /><Bottle color="#3f6b3a" label="Rosemary Essential Oil" /></div>
+        <div className="offer-art" aria-hidden><img src={BRAND.promoWellness} alt="" /><span className="offer-badge"><b>10%</b>OFF</span></div>
         <div className="offer-body">
           <span className="hero-eyebrow">WELCOME OFFER</span>
           <h2 id="offer-h">{cfg.title}</h2>
