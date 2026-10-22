@@ -20,10 +20,34 @@ export function getAttribution(): { first_touch: Touch | null; last_touch: Touch
     return { first_touch: JSON.parse(localStorage.getItem('ek_ft') || 'null'), last_touch: JSON.parse(localStorage.getItem('ek_lt') || 'null') };
   } catch { return { first_touch: null, last_touch: null }; }
 }
-// GA4 ecommerce events via dataLayer (GTM picks them up) — MKT-002
+export const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID ?? '994707213669198';
+
+// GA4 event name → Meta Pixel standard event
+const META: Record<string, string> = { view_item: 'ViewContent', add_to_cart: 'AddToCart', begin_checkout: 'InitiateCheckout', add_payment_info: 'AddPaymentInfo', purchase: 'Purchase', generate_lead: 'Lead', sign_up: 'CompleteRegistration' };
+type Item = { item_id?: string; item_name?: string; price?: number; quantity?: number };
+function toMeta(event: string, e?: Record<string, unknown>) {
+  const name = META[event];
+  const fbq = (window as unknown as { fbq?: (...a: unknown[]) => void }).fbq;
+  if (!name || !fbq) return;
+  const items = (e?.items as Item[] | undefined) ?? [];
+  const data: Record<string, unknown> = {};
+  if (e?.value != null) { data.value = Number(e.value); data.currency = (e.currency as string) || 'INR'; }
+  if (items.length) {
+    data.content_type = 'product';
+    data.content_ids = items.map(i => i.item_id ?? i.item_name).filter(Boolean);
+    data.contents = items.map(i => ({ id: i.item_id ?? i.item_name, quantity: i.quantity ?? 1, item_price: i.price }));
+    data.num_items = items.reduce((n, i) => n + (i.quantity ?? 1), 0);
+    if (event === 'view_item') data.content_name = items[0].item_name;
+  }
+  // order number as eventID lets Meta de-duplicate a purchase (and a future server-side Conversions API event)
+  fbq('track', name, data, e?.transaction_id ? { eventID: String(e.transaction_id) } : undefined);
+}
+
+// GA4 ecommerce events via dataLayer (GTM picks them up) — MKT-002 — and the same event to the Meta Pixel.
 export function track(event: string, ecommerce?: Record<string, unknown>) {
   const w = window as unknown as { dataLayer?: unknown[] };
   w.dataLayer = w.dataLayer || [];
   if (ecommerce) w.dataLayer.push({ ecommerce: null });
   w.dataLayer.push(ecommerce ? { event, ecommerce } : { event });
+  try { toMeta(event, ecommerce); } catch { /* never break the page for analytics */ }
 }

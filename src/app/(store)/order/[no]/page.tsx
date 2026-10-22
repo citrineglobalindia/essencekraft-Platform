@@ -27,8 +27,9 @@ export default function OrderPage({ params }: { params: { no: string } }) {
     if (!o) return;
     const done = o.payment_status === 'paid' || o.payment_method === 'cod';
     const key = `ek_purchase_${o.order_no}`;
-    if (done && !sessionStorage.getItem(key)) {  // fire GA4 purchase once (MKT-002)
-      sessionStorage.setItem(key, '1');
+    let seen = false; try { seen = !!localStorage.getItem(key) || !!sessionStorage.getItem(key); } catch {}
+    if (done && !seen) {  // fire GA4 + Meta purchase once per browser (MKT-002)
+      try { localStorage.setItem(key, '1'); } catch {}
       track('purchase', { transaction_id: o.order_no, currency: 'INR', value: Number(o.total), shipping: Number(o.shipping),
         items: o.items.map(i => ({ item_name: i.product_name ?? i.name, item_variant: i.variant_label ?? i.label, quantity: i.qty, price: Number(i.unit_price ?? i.price) })) });
     }

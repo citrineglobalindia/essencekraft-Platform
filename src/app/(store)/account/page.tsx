@@ -6,6 +6,7 @@ import { hasSupabase } from '@/lib/supabase';
 import { acct, useUser, INDIAN_STATES, type User } from '@/lib/account';
 import { useCart } from '@/lib/cart';
 import { inr } from '@/lib/format';
+import { track } from '@/lib/attribution';
 
 type Ord = { id: string; order_no: string; access_token: string; status: string; total: number; created_at: string; invoice_no: string | null; order_items: { product_name: string; qty: number }[] };
 type Addr = { id?: string; label: string; full_name: string; phone: string; line1: string; line2: string | null; city: string; state: string; pincode: string; is_default: boolean };
@@ -42,6 +43,7 @@ function Auth() {
       else if (mode === 'password') run(() => acct().auth.signInWithPassword({ email, password: pw }));
       else run(async () => { if (pw.length < 8) return { error: { message: 'Use at least 8 characters for your password.' } };
         const r = await acct().auth.signUp({ email, password: pw, options: { data: { full_name: name }, emailRedirectTo: `${origin}/account` } });
+        if (!r.error) track('sign_up', { method: 'email' });
         if (!r.error && !r.data.session) setMsg({ t: 'ok', m: `Almost done — open the link we sent to ${email} to confirm your account.` }); return r; }); }}>
       {mode === 'signup' && <div className="field"><label htmlFor="a-name">Full name</label><input id="a-name" className="input" value={name} onChange={e => setName(e.target.value)} required autoComplete="name" /></div>}
       <div className="field"><label htmlFor="a-email">Email</label><input id="a-email" type="email" className="input" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" disabled={sent} /></div>
