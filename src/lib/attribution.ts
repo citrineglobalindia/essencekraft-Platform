@@ -39,8 +39,19 @@ function toMeta(event: string, e?: Record<string, unknown>) {
     data.num_items = items.reduce((n, i) => n + (i.quantity ?? 1), 0);
     if (event === 'view_item') data.content_name = items[0].item_name;
   }
+  if (event === 'add_to_cart') cartPageView();
   // order number as eventID lets Meta de-duplicate a purchase (and a future server-side Conversions API event)
   fbq('track', name, data, e?.transaction_id ? { eventID: String(e.transaction_id) } : undefined);
+}
+
+// Every add-to-cart also records a Meta page view for a fixed URL, so URL-based rules and custom conversions can use
+// “URL contains cart?added” — without changing the customer's address bar (the cart drawer just opens).
+export const ADDED_TO_CART_URL = 'https://www.essencekraft.in/cart?added=1';
+function cartPageView() {
+  if (!PIXEL_ID) return;
+  const fbp = document.cookie.match(/(?:^|; )_fbp=([^;]+)/)?.[1]; const fbc = document.cookie.match(/(?:^|; )_fbc=([^;]+)/)?.[1];
+  const q = new URLSearchParams({ id: PIXEL_ID, ev: 'PageView', dl: ADDED_TO_CART_URL, rl: location.href, if: 'false', ts: String(Date.now()), ...(fbp ? { fbp } : {}), ...(fbc ? { fbc } : {}) });
+  new Image().src = `https://www.facebook.com/tr?${q}`;
 }
 
 // GA4 ecommerce events via dataLayer (GTM picks them up) — MKT-002 — and the same event to the Meta Pixel.
