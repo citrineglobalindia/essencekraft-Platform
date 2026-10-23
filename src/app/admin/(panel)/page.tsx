@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { db, fmtDate, statusTone } from '@/lib/admin';
 import { inr } from '@/lib/format';
 import { Bottle } from '@/components/Bottle';
+import { VisitsCard } from '@/components/VisitsCard';
 
 type O = { id: string; order_no: string; full_name: string; total: number; status: string; payment_status: string; payment_method: string; created_at: string; last_touch: Record<string, string> | null; order_items?: { product_name: string; qty: number; unit_price: number }[] };
 type V = { id: string; sku: string; label: string; stock: number; low_stock_threshold: number; product: { name: string } };
@@ -64,6 +65,8 @@ export default function Dashboard() {
       <Kpi label="Average order value" value={inr(m.aov)} d={m.dA} spark={m.daily.map((v, i) => (m.dailyN[i] ? v / m.dailyN[i] : 0))} tone="#a8661a" />
       <Kpi label="New leads" value={String(m.lc)} d={m.dL} spark={m.dailyL} tone="#7a5a9e" />
     </section>
+
+    <VisitsCard />
 
     <div className="adm-row">
       <section className="adm-card adm-chart">

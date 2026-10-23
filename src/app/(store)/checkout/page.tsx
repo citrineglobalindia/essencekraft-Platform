@@ -26,7 +26,7 @@ export default function Checkout() {
   const user = useUser(); const [saved, setSaved] = useState<{ id: string; label: string; full_name: string; phone: string; line1: string; line2: string | null; city: string; state: string; pincode: string; is_default: boolean }[]>([]); const [saveAddr, setSaveAddr] = useState(true);
   useEffect(() => {
     if (!user || !hasSupabase) return; const c = browserClient();
-    setF(x => ({ ...x, email: x.email || user.email }));
+    setF(x => ({ ...x, email: user.email }));
     c.from('addresses').select('*').order('is_default', { ascending: false }).then(({ data }) => { const a = data ?? []; setSaved(a); if (a[0]) { const d = a[0]; setF(x => ({ ...x, full_name: x.full_name || d.full_name, phone: x.phone || d.phone, line1: x.line1 || d.line1, line2: x.line2 || (d.line2 ?? ''), city: x.city || d.city, state: d.state, pincode: x.pincode || d.pincode })); } });
     c.from('profiles').select('full_name,phone').eq('id', user.id).maybeSingle().then(({ data }) => data && setF(x => ({ ...x, full_name: x.full_name || (data.full_name ?? ''), phone: x.phone || (data.phone ?? '') })));
   }, [user]);
@@ -109,13 +109,21 @@ export default function Checkout() {
       <input id={k} className="input" value={f[k]} onChange={upd(k)} aria-invalid={!!errors[k]} aria-describedby={errors[k] ? `${k}-e` : undefined} {...props} />
       {errors[k] && <span id={`${k}-e`} className="err">{errors[k]}</span>}</div>);
 
+  // Account required to buy (orders, invoices and tracking live in the customer's account).
+  if (hasSupabase && user === undefined) return <div className="wrap section"><p>Loading…</p></div>;
+  if (hasSupabase && user === null) return <div className="wrap section" style={{ maxWidth: 560 }}>
+    <section className="panel" style={{ display: 'grid', gap: 12 }}>
+      <h1 style={{ fontSize: '1.6rem' }}>Sign in to check out</h1>
+      <p className="muted">Create a free account or sign in to place your order. Your cart ({lines.reduce((n, l) => n + l.qty, 0)} item{lines.reduce((n, l) => n + l.qty, 0) === 1 ? '' : 's'}, {inr(subtotal)}) is saved. With an account you can track orders, download invoices and save addresses.</p>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}><Link className="btn btn-primary" href="/account?next=/checkout">Sign in / Create account</Link><Link className="btn btn-ghost" href="/cart">Back to cart</Link></div>
+      <small className="muted">Quickest: choose “Email code” — we email you a 6-digit code, no password needed.</small>
+    </section></div>;
   return (
     <div className="wrap checkout">
       <div>
-        {user === null && hasSupabase && <p className="notice" style={{ marginBottom: 12 }}>Have an account? <Link className="link" href="/account?next=/checkout">Sign in</Link> for saved addresses and order history — or continue as a guest.</p>}
         <section className="panel"><h2>Contact</h2>
           <div className="form-grid two">
-            {F('email', 'Email', { type: 'email', autoComplete: 'email' })}
+            {F('email', 'Email', { type: 'email', autoComplete: 'email', readOnly: !!user, title: user ? 'Orders are linked to the account you signed in with' : undefined })}
             {F('phone', 'Mobile number', { type: 'tel', inputMode: 'numeric', autoComplete: 'tel-national', maxLength: 13 })}
             <label className="check span2"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />Send me offers and new-launch updates by email and WhatsApp (optional)</label>
             <p className="muted span2" style={{ fontSize: 12 }}>We save your cart with these details so you can pick up where you left off, and may send one reminder if you don&apos;t finish checking out.</p>

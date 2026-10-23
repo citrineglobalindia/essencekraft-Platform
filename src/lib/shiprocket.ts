@@ -17,6 +17,8 @@ async function token() {
   tok = { v: j.token, exp: Date.now() + 8 * 24 * 3600e3 }; // tokens last 10 days
   return tok.v;
 }
+/** Live connection test for the admin integrations panel (logs in with the API user). */
+export async function srPing() { tok = null; await token(); return true; }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function sr(path: string, init: RequestInit = {}): Promise<any> {
   const r = await fetch(`${API}${path}`, { ...init, cache: 'no-store', headers: { 'content-type': 'application/json', Authorization: `Bearer ${await token()}`, ...(init.headers ?? {}) } });

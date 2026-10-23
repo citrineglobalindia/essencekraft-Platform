@@ -1,8 +1,8 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { db, isDemo } from '@/lib/admin';
+import { useCallback, useEffect, useState } from 'react';
+import { browserClient, hasSupabase } from '@/lib/supabase';
+import { db } from '@/lib/admin';
 import { PageHead, Saved } from '@/components/AdminUI';
-import { WHATSAPP } from '@/lib/format';
 
 type S = { free_shipping_min: number; shipping_flat: number; cod_fee: number; support_email: string; whatsapp: string; legal_name: string; gstin: string; address: string; [k: string]: unknown };
 const DEF: S = { sr_auto: false, sr_pickup: 'Home-1', sr_pickup_pincode: '570020', sr_weight: 0.2, sr_l: 10, sr_b: 6, sr_h: 6, free_shipping_min: 999, shipping_flat: 79, cod_fee: 49, support_email: '', whatsapp: '', legal_name: 'EssenceKraft', gstin: '', address: '' };
@@ -16,7 +16,18 @@ export default function Settings() {
     setMsg(error ? { t: 'error', m: error.message } : { t: 'ok', m: 'Settings saved.' }); };
   const N = (k: keyof S, l: string, hint?: string) => <div className="field"><label htmlFor={String(k)}>{l}</label><input id={String(k)} type="number" min={0} step="any" className="input" value={Number(s[k])} onChange={e => setS({ ...s, [k]: Number(e.target.value) })} />{hint && <small className="muted">{hint}</small>}</div>;
   const T = (k: keyof S, l: string, ph?: string) => <div className="field"><label htmlFor={String(k)}>{l}</label><input id={String(k)} className="input" placeholder={ph} value={String(s[k] ?? '')} onChange={e => setS({ ...s, [k]: e.target.value })} /></div>;
-  const ok = (v: boolean) => <span className={`pill ${v ? 'green' : 'amber'}`}>{v ? 'Connected' : 'Not set'}</span>;
+  type Integ = { checked_at: string; rows: { key: string; name: string; what: string; status: 'ok' | 'error' | 'off'; detail: string }[] };
+  const [integ, setInteg] = useState<Integ | null>(null); const [integBusy, setIntegBusy] = useState(false); const [integErr, setIntegErr] = useState('');
+  const loadInteg = useCallback(async () => {
+    if (!hasSupabase) { setIntegErr('Demo mode — connect Supabase to see live status.'); return; }
+    setIntegBusy(true); setIntegErr('');
+    try { const { data } = await browserClient().auth.getSession();
+      const r = await fetch('/api/integrations', { headers: { authorization: `Bearer ${data.session?.access_token ?? ''}` }, cache: 'no-store' });
+      const j = await r.json(); if (!r.ok) throw new Error(j.error ?? `Status check failed (${r.status})`); setInteg(j);
+    } catch (e) { setIntegErr(e instanceof Error ? e.message : 'Status check failed'); }
+    setIntegBusy(false);
+  }, []);
+  useEffect(() => { loadInteg(); }, [loadInteg]);
   return <>
     <PageHead title="Settings" sub="Shipping rules, business details for invoices, and integration status."><button className="btn btn-primary btn-sm" onClick={save}>Save settings</button></PageHead>
     <Saved msg={msg} />
@@ -28,13 +39,11 @@ export default function Settings() {
         <div className="form-grid two">{T('sr_pickup', 'Pickup address nickname', 'Home-1')}{T('sr_pickup_pincode', 'Pickup pincode', '570020')}{N('sr_weight', 'Weight per bottle (kg)', 'e.g. 0.2')}{N('sr_l', 'Box length (cm)')}{N('sr_b', 'Box breadth (cm)')}{N('sr_h', 'Box height (cm)')}</div></section>
       <section className="adm-card form-grid"><div className="adm-card-h"><div><h3>Business details</h3><p>Shown on tax invoices and the contact page.</p></div></div>
         <div className="form-grid two">{T('legal_name', 'Legal name')}{T('gstin', 'GSTIN', '29ABCDE1234F1Z5')}{T('support_email', 'Support email', 'hello@essencekraft.in')}{T('whatsapp', 'WhatsApp number', '9190000 00000')}</div>{T('address', 'Registered address')}</section>
-      <section className="adm-card adm-span"><div className="adm-card-h"><div><h3>Integrations</h3><p>Keys are added in Vercel → Settings → Environment Variables, never here.</p></div></div>
+      <section className="adm-card adm-span"><div className="adm-card-h"><div><h3>Integrations</h3><p>{integ?.checked_at ? `Live check · ${new Date(integ.checked_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}` : 'Checking each service…'} · keys live in Vercel → Environment Variables, never here.</p></div>
+        <button className="btn btn-ghost btn-sm" onClick={loadInteg} disabled={integBusy}>{integBusy ? 'Checking…' : 'Re-check'}</button></div>
         <div className="table-wrap"><table><tbody>
-          <tr><td><b>Supabase</b> — database, login, storage</td><td>{ok(!isDemo)}</td></tr>
-          <tr><td><b>Razorpay</b> — UPI, cards, net banking</td><td><span className="pill grey">Check in Vercel</span></td></tr>
-          <tr><td><b>Google Tag Manager</b> — GA4, Ads, Meta Pixel</td><td>{ok(!!process.env.NEXT_PUBLIC_GTM_ID)}</td></tr>
-          <tr><td><b>Shiprocket</b> — shipping, labels, tracking</td><td><span className="pill grey">Check in Vercel</span></td></tr>
-          <tr><td><b>WhatsApp</b> — chat button & order help</td><td><span className="pill green">+{WHATSAPP.slice(0, 2)} {WHATSAPP.slice(2)}</span></td></tr>
+          {(integ?.rows ?? []).map(r => <tr key={r.key}><td><b>{r.name}</b> — {r.what}<br /><small className="muted">{r.detail}</small></td><td style={{ whiteSpace: 'nowrap' }}><span className={`pill ${r.status === 'ok' ? 'green' : r.status === 'error' ? 'red' : 'amber'}`}>{r.status === 'ok' ? 'Connected' : r.status === 'error' ? 'Error' : 'Not set'}</span></td></tr>)}
+          {!integ && <tr><td colSpan={2} className="muted">{integErr || 'Checking Supabase, Razorpay, Brevo, Shiprocket…'}</td></tr>}
         </tbody></table></div></section>
     </div>
   </>;

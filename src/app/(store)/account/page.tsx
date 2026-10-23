@@ -36,13 +36,13 @@ function Auth() {
   return <div className="panel auth-box">
     <h2>Sign in or create an account</h2><p className="muted" style={{ fontSize: 14, margin: '4px 0 14px' }}>See all your orders, download invoices, save addresses and collect reward points.</p>
     <div className="auth-tabs" role="tablist">{([['code', 'Email code'], ['password', 'Password'], ['signup', 'Create account']] as const).map(([k, l]) => <button key={k} role="tab" aria-pressed={mode === k} onClick={() => { setMode(k); setMsg(null); setSent(false); }}>{l}</button>)}</div>
-    {sp.get('next') && <p className="notice" style={{ marginBottom: 10 }}>Sign in to continue.</p>}
+    {sp.get('next') && <p className="notice" style={{ marginBottom: 10 }}>{sp.get('next') === '/checkout' ? 'Sign in or create a free account to complete your order — your cart is saved.' : 'Sign in to continue.'}</p>}
     <form className="form-grid" onSubmit={e => { e.preventDefault();
-      if (mode === 'code' && !sent) run(async () => { const r = await acct().auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: `${origin}/account` } }); if (!r.error) { setSent(true); setMsg({ t: 'ok', m: `We emailed a 6-digit code to ${email}.` }); } return r; });
+      if (mode === 'code' && !sent) run(async () => { const r = await acct().auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: `${origin}/account${sp.get('next') ? `?next=${encodeURIComponent(sp.get('next')!)}` : ''}` } }); if (!r.error) { setSent(true); setMsg({ t: 'ok', m: `We emailed a 6-digit code to ${email}.` }); } return r; });
       else if (mode === 'code') run(() => acct().auth.verifyOtp({ email, token: code.trim(), type: 'email' }));
       else if (mode === 'password') run(() => acct().auth.signInWithPassword({ email, password: pw }));
       else run(async () => { if (pw.length < 8) return { error: { message: 'Use at least 8 characters for your password.' } };
-        const r = await acct().auth.signUp({ email, password: pw, options: { data: { full_name: name }, emailRedirectTo: `${origin}/account` } });
+        const r = await acct().auth.signUp({ email, password: pw, options: { data: { full_name: name }, emailRedirectTo: `${origin}/account${sp.get('next') ? `?next=${encodeURIComponent(sp.get('next')!)}` : ''}` } });
         if (!r.error) track('sign_up', { method: 'email' });
         if (!r.error && !r.data.session) setMsg({ t: 'ok', m: `Almost done — open the link we sent to ${email} to confirm your account.` }); return r; }); }}>
       {mode === 'signup' && <div className="field"><label htmlFor="a-name">Full name</label><input id="a-name" className="input" value={name} onChange={e => setName(e.target.value)} required autoComplete="name" /></div>}
@@ -133,7 +133,10 @@ function Dashboard({ user }: { user: User }) {
 }
 
 function AccountView() {
-  const user = useUser();
+  const user = useUser(); const sp = useSearchParams(); const router = useRouter();
+  const next = sp.get('next'); const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : null;
+  useEffect(() => { if (user && safeNext) router.replace(safeNext); }, [user, safeNext, router]);
+  if (user && safeNext) return <div className="wrap section"><p>Signed in — taking you back…</p></div>;
   return <div className="wrap section">
     <h1 style={{ fontSize: '2rem', marginBottom: 6 }}>{user ? 'My account' : 'Account'}</h1>
     {user && <p className="muted" style={{ marginBottom: 18 }}>Signed in as {user.email}</p>}
