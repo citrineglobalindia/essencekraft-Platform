@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { AuthModal } from '@/components/AuthModal';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useCart } from '@/lib/cart';
@@ -23,7 +24,7 @@ export default function Checkout() {
   const [busy, setBusy] = useState(false); const [fail, setFail] = useState('');
   const [fees, setFees] = useState({ free_shipping_min: 999, shipping_flat: SHIPPING_FLAT, cod_fee: COD_FEE });
   // Signed-in shoppers: prefill from their profile and saved addresses
-  const user = useUser(); const [saved, setSaved] = useState<{ id: string; label: string; full_name: string; phone: string; line1: string; line2: string | null; city: string; state: string; pincode: string; is_default: boolean }[]>([]); const [saveAddr, setSaveAddr] = useState(true);
+  const user = useUser(); const [authOpen, setAuthOpen] = useState(true); const [saved, setSaved] = useState<{ id: string; label: string; full_name: string; phone: string; line1: string; line2: string | null; city: string; state: string; pincode: string; is_default: boolean }[]>([]); const [saveAddr, setSaveAddr] = useState(true);
   useEffect(() => {
     if (!user || !hasSupabase) return; const c = browserClient();
     setF(x => ({ ...x, email: user.email }));
@@ -113,11 +114,12 @@ export default function Checkout() {
   if (hasSupabase && user === undefined) return <div className="wrap section"><p>Loading…</p></div>;
   if (hasSupabase && user === null) return <div className="wrap section" style={{ maxWidth: 560 }}>
     <section className="panel" style={{ display: 'grid', gap: 12 }}>
-      <h1 style={{ fontSize: '1.6rem' }}>Sign in to check out</h1>
-      <p className="muted">Create a free account or sign in to place your order. Your cart ({lines.reduce((n, l) => n + l.qty, 0)} item{lines.reduce((n, l) => n + l.qty, 0) === 1 ? '' : 's'}, {inr(subtotal)}) is saved. With an account you can track orders, download invoices and save addresses.</p>
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}><Link className="btn btn-primary" href="/account?next=/checkout">Sign in / Create account</Link><Link className="btn btn-ghost" href="/cart">Back to cart</Link></div>
-      <small className="muted">Quickest: choose “Email code” — we email you a 6-digit code, no password needed.</small>
-    </section></div>;
+      <h1 style={{ fontSize: '1.6rem' }}>Log in to check out</h1>
+      <p className="muted">Your cart ({lines.reduce((n, l) => n + l.qty, 0)} item{lines.reduce((n, l) => n + l.qty, 0) === 1 ? '' : 's'}, {inr(subtotal)}) is saved. Log in or create a free account to place your order.</p>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}><button className="btn btn-primary" onClick={() => setAuthOpen(true)}>Log in / Sign up</button><Link className="btn btn-ghost" href="/cart">Back to cart</Link></div>
+    </section>
+    <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} context="checkout" />
+  </div>;
   return (
     <div className="wrap checkout">
       <div>
