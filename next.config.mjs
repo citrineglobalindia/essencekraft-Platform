@@ -3,6 +3,8 @@ const nextConfig = {
   images: { remotePatterns: [{ protocol: 'https', hostname: '**.supabase.co' }] },
   async redirects() {
     return [
+      // Old Vercel address → real domain (keeps the path and ?query, e.g. email sign-in links). /api stays reachable for webhooks.
+      { source: '/:path((?!api/).*)', has: [{ type: 'host', value: 'essencekraft-platform.vercel.app' }], destination: 'https://www.essencekraft.in/:path', permanent: true },
       { source: '/pages/about', destination: '/about', permanent: true },
       // Legacy essencekraft.in routes (SEO-001)
       { source: '/products', destination: '/shop', permanent: true },

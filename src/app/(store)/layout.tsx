@@ -6,6 +6,7 @@ import { BottomNav } from '@/components/BottomNav';
 import { OfferPopup } from '@/components/OfferPopup';
 import { MetaPixel } from '@/components/MetaPixel';
 import { VisitTracker } from '@/components/VisitTracker';
+import { AuthCallback } from '@/components/AuthCallback';
 import { getCategories, getConcerns, getProducts, getSettings } from '@/lib/data';
 import { SITE_URL } from '@/lib/format';
 
@@ -30,6 +31,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     <Attribution />
     <MetaPixel />
     <VisitTracker />
+    <AuthCallback />
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(org) }} />
   </>;
 }

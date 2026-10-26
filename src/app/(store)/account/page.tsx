@@ -36,6 +36,8 @@ function Auth() {
   return <div className="panel auth-box">
     <h2>Sign in or create an account</h2><p className="muted" style={{ fontSize: 14, margin: '4px 0 14px' }}>See all your orders, download invoices, save addresses and collect reward points.</p>
     <div className="auth-tabs" role="tablist">{([['code', 'Email code'], ['password', 'Password'], ['signup', 'Create account']] as const).map(([k, l]) => <button key={k} role="tab" aria-pressed={mode === k} onClick={() => { setMode(k); setMsg(null); setSent(false); }}>{l}</button>)}</div>
+    {sp.get('confirmed') && <p className="notice ok" style={{ marginBottom: 10 }}>Your email is confirmed — sign in below to continue.</p>}
+    {sp.get('auth_error') && <p className="notice error" style={{ marginBottom: 10 }}>{/expired|invalid/i.test(sp.get('auth_error')!) ? 'That link has expired or was already used. Sign in below, or request a new code.' : sp.get('auth_error')}</p>}
     {sp.get('next') && <p className="notice" style={{ marginBottom: 10 }}>{sp.get('next') === '/checkout' ? 'Sign in or create a free account to complete your order — your cart is saved.' : 'Sign in to continue.'}</p>}
     <form className="form-grid" onSubmit={e => { e.preventDefault();
       if (mode === 'code' && !sent) run(async () => { const r = await acct().auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: `${origin}/account${sp.get('next') ? `?next=${encodeURIComponent(sp.get('next')!)}` : ''}` } }); if (!r.error) { setSent(true); setMsg({ t: 'ok', m: `We emailed a 6-digit code to ${email}.` }); } return r; });
