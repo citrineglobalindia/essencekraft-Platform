@@ -40,8 +40,14 @@ function Auth() {
     {sp.get('auth_error') && <p className="notice error" style={{ marginBottom: 10 }}>{/expired|invalid/i.test(sp.get('auth_error')!) ? 'That link has expired or was already used. Sign in below, or request a new code.' : sp.get('auth_error')}</p>}
     {sp.get('next') && <p className="notice" style={{ marginBottom: 10 }}>{sp.get('next') === '/checkout' ? 'Sign in or create a free account to complete your order — your cart is saved.' : 'Sign in to continue.'}</p>}
     <form className="form-grid" onSubmit={e => { e.preventDefault();
-      if (mode === 'code' && !sent) run(async () => { const r = await acct().auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: `${origin}/account${sp.get('next') ? `?next=${encodeURIComponent(sp.get('next')!)}` : ''}` } }); if (!r.error) { setSent(true); setMsg({ t: 'ok', m: `We emailed a 6-digit code to ${email}.` }); } return r; });
-      else if (mode === 'code') run(() => acct().auth.verifyOtp({ email, token: code.trim(), type: 'email' }));
+      if (mode === 'code' && !sent) run(async () => { const r = await acct().auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: `${origin}/account${sp.get('next') ? `?next=${encodeURIComponent(sp.get('next')!)}` : ''}` } }); if (!r.error) { setSent(true); setMsg({ t: 'ok', m: `We emailed a sign-in code to ${email}. Use the newest email if you get more than one.` }); } return r; });
+      else if (mode === 'code') run(async () => {
+        // Returning customers get a sign-in code; brand-new emails get a sign-up confirmation code — accept either.
+        const token = code.trim(); let r = await acct().auth.verifyOtp({ email, token, type: 'email' });
+        if (r.error) { const r2 = await acct().auth.verifyOtp({ email, token, type: 'signup' }); if (!r2.error) r = r2; }
+        if (r.error && /expired|invalid/i.test(r.error.message)) return { error: { message: 'That code didn’t work — it may have expired, or a newer code was sent. Use the latest email, or tap “Send a new code”.' } };
+        return r;
+      });
       else if (mode === 'password') run(() => acct().auth.signInWithPassword({ email, password: pw }));
       else run(async () => { if (pw.length < 8) return { error: { message: 'Use at least 8 characters for your password.' } };
         const r = await acct().auth.signUp({ email, password: pw, options: { data: { full_name: name }, emailRedirectTo: `${origin}/account${sp.get('next') ? `?next=${encodeURIComponent(sp.get('next')!)}` : ''}` } });
@@ -49,7 +55,8 @@ function Auth() {
         if (!r.error && !r.data.session) setMsg({ t: 'ok', m: `Almost done — open the link we sent to ${email} to confirm your account.` }); return r; }); }}>
       {mode === 'signup' && <div className="field"><label htmlFor="a-name">Full name</label><input id="a-name" className="input" value={name} onChange={e => setName(e.target.value)} required autoComplete="name" /></div>}
       <div className="field"><label htmlFor="a-email">Email</label><input id="a-email" type="email" className="input" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" disabled={sent} /></div>
-      {mode === 'code' && sent && <div className="field"><label htmlFor="a-code">6-digit code</label><input id="a-code" className="input" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} required /></div>}
+      {mode === 'code' && sent && <div className="field"><label htmlFor="a-code">Code from the email</label><input id="a-code" className="input" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 10))} required />
+        <button type="button" className="link" style={{ justifySelf: 'start', fontSize: 13 }} disabled={busy} onClick={() => run(async () => { setCode(''); const r = await acct().auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: `${origin}/account${sp.get('next') ? `?next=${encodeURIComponent(sp.get('next')!)}` : ''}` } }); if (!r.error) setMsg({ t: 'ok', m: `New code sent to ${email} — earlier codes no longer work.` }); return r; })}>Send a new code</button></div>}
       {mode !== 'code' && <div className="field"><label htmlFor="a-pw">Password</label><input id="a-pw" type="password" className="input" value={pw} onChange={e => setPw(e.target.value)} required autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} minLength={mode === 'signup' ? 8 : undefined} /></div>}
       {msg && <p className={`notice ${msg.t}`} role="status">{msg.m}</p>}
       <button className="btn btn-primary" disabled={busy}>{busy ? 'Please wait…' : mode === 'code' ? (sent ? 'Verify & sign in' : 'Email me a code') : mode === 'password' ? 'Sign in' : 'Create account'}</button>
