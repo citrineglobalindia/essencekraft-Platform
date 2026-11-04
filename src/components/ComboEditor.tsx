@@ -6,7 +6,7 @@ import type { Combo } from '@/lib/types';
 type VOpt = { id: string; label: string; sku: string; stock: number; product: { id: string; name: string; status: string; combo: unknown } | null };
 // Admin: “Pick any N” combo settings for a product.
 export function ComboEditor({ value, onChange, selfId }: { value: Combo | null; onChange: (c: Combo | null) => void; selfId?: string }) {
-  const [all, setAll] = useState<VOpt[]>([]); const [q, setQ] = useState('');
+  const [all, setAll] = useState<VOpt[]>([]); const [q, setQ] = useState(''); const [withArchived, setWithArchived] = useState(false);
   useEffect(() => {
     db().from('variants').select('id,label,sku,stock,product:products(id,name,status,combo)').order('sku').then(({ data, error }) => {
       if (error && /combo/.test(error.message)) return db().from('variants').select('id,label,sku,stock,product:products(id,name,status)').order('sku').then(r => setAll((r.data ?? []) as unknown as VOpt[]));
@@ -16,7 +16,11 @@ export function ComboEditor({ value, onChange, selfId }: { value: Combo | null; 
   // Choices: sizes of other non-combo, non-archived products
   const list = useMemo(() => all.filter(v => v.product && v.product.id !== selfId && !v.product.combo && v.product.status !== 'archived')
     .sort((a, b) => a.product!.name.localeCompare(b.product!.name) || a.label.localeCompare(b.label)), [all, selfId]);
-  const name = (v: VOpt) => `${v.product?.name} · ${v.label}`;
+  const name = (v: VOpt) => `${v.product?.name} · ${v.label}${v.product?.status === 'archived' ? ' (archived)' : ''}`;
+  // Free items may also come from archived products (e.g. a gift not sold on its own); already-chosen ones always stay listed.
+  const chosenFree = new Set((value?.includes ?? []).map(i => i.variant_id));
+  const freeList = useMemo(() => all.filter(v => v.product && v.product.id !== selfId && !v.product.combo && (withArchived || v.product.status !== 'archived' || chosenFree.has(v.id)))
+    .sort((a, b) => a.product!.name.localeCompare(b.product!.name) || a.label.localeCompare(b.label)), [all, selfId, withArchived, value]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!value) return <section className="panel form-grid"><h2>Combo</h2>
     <p className="muted" style={{ margin: 0 }}>Turn this product into a “Pick any N” combo — customers choose items from a list you set, at one combo price, with optional free items.</p>
     <button className="btn btn-ghost btn-sm" style={{ justifySelf: 'start' }} onClick={() => onChange({ pick: 2, options: [], includes: [], allow_repeat: true })}>Make this a combo</button></section>;
@@ -45,11 +49,13 @@ export function ComboEditor({ value, onChange, selfId }: { value: Combo | null; 
     <div className="field"><label>Free items included (optional)</label>
       {inc.map((it, i) => <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
         <select className="select" value={it.variant_id} onChange={e => set({ includes: inc.map((x, j) => j === i ? { ...x, variant_id: e.target.value } : x) })}>
-          <option value="">Choose a product…</option>{list.map(v => <option key={v.id} value={v.id}>{name(v)}</option>)}</select>
+          <option value="">Choose a product…</option>{freeList.map(v => <option key={v.id} value={v.id}>{name(v)}</option>)}</select>
         <input className="input" type="number" min={1} style={{ width: 80 }} value={it.qty} onChange={e => set({ includes: inc.map((x, j) => j === i ? { ...x, qty: Math.max(1, Number(e.target.value) || 1) } : x) })} aria-label="Quantity" />
         <button type="button" className="link link-danger" onClick={() => set({ includes: inc.filter((_, j) => j !== i) })}>Remove</button></div>)}
-      <button type="button" className="btn btn-ghost btn-sm" style={{ justifySelf: 'start' }} onClick={() => set({ includes: [...inc, { variant_id: '', qty: 1 }] })}>+ Add free item</button>
-      <small className="muted">e.g. a free diffuser in every box. Its stock is reduced with each combo sold.</small></div>
+      <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => set({ includes: [...inc, { variant_id: '', qty: 1 }] })}>+ Add free item</button>
+        <label className="check" style={{ fontSize: 13.5 }}><input type="checkbox" checked={withArchived} onChange={e => setWithArchived(e.target.checked)} />Include archived products</label></div>
+      <small className="muted">e.g. a free diffuser in every box. Its stock is reduced with each combo sold. Archived products can be free gifts too — they stay hidden from the shop but show inside this combo.</small></div>
     <p className="notice" style={{ margin: 0 }}>Set the combo’s price, MRP and stock in <b>Variants &amp; pricing</b> below — use one row (e.g. size “Combo”).</p>
   </section>;
 }

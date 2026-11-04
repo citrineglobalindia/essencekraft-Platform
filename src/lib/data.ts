@@ -54,3 +54,15 @@ export const getSettings = cache(async (): Promise<StoreSettings> => {
   const { data } = await publicClient().from('settings').select('value').eq('key', 'store').maybeSingle();
   return { ...fallback, ...(data?.value ?? {}) };
 });
+
+/** Free items for combo pages: may be archived products (hidden from the shop), so they're read server-side. */
+export type ExtraVariant = { variant_id: string; slug: string; name: string; label: string; image?: string; color: string; available: boolean; worth: number };
+export const getComboExtras = cache(async (ids: string[]): Promise<ExtraVariant[]> => {
+  if (!ids.length || !hasSupabase) return [];
+  let db: ReturnType<typeof publicClient> = publicClient();
+  try { const { adminClient } = await import('./server'); db = adminClient() as unknown as typeof db; } catch { /* no service key: active products only */ }
+  const { data } = await db.from('variants').select('id, label, price, compare_at, stock, allow_backorder, product:products(slug, name, images, color)').in('id', ids);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((data ?? []) as any[]).filter(v => v.product).map(v => ({ variant_id: v.id, slug: v.product.slug, name: v.product.name, label: v.label, image: v.product.images?.[0], color: v.product.color ?? '#7a5a9e',
+    available: v.stock > 0 || v.allow_backorder, worth: Number(v.compare_at ?? v.price) }));
+});

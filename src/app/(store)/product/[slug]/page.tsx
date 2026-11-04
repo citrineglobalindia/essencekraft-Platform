@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getProduct, getProducts, getConcerns } from '@/lib/data';
+import { getProduct, getProducts, getConcerns, getComboExtras } from '@/lib/data';
 import { Gallery, ProductBuy } from '@/components/ProductBuy';
 import { PinCheck } from '@/components/PinCheck';
 import { ComboBuy, type ComboOption } from '@/components/ComboBuy';
@@ -24,7 +24,9 @@ export default async function ProductPage({ params }: { params: { slug: string }
   const vmap = new Map(all.flatMap(x => x.variants.map(v => [v.id, { x, v }] as const)));
   const opt = (id: string): ComboOption | null => { const m = vmap.get(id); return m ? { variant_id: id, slug: m.x.slug, name: m.x.name, label: m.v.label, image: m.x.images[0], color: m.x.color, available: m.v.stock > 0 || m.v.allow_backorder } : null; };
   const comboOptions = p.combo ? p.combo.options.map(opt).filter((o): o is ComboOption => !!o) : [];
-  const comboIncludes = p.combo ? (p.combo.includes ?? []).map(i => { const o = opt(i.variant_id); const m = vmap.get(i.variant_id); return o && m ? { ...o, qty: i.qty || 1, worth: m.v.compare_at ?? m.v.price } : null; }).filter((x): x is ComboOption & { qty: number; worth: number } => !!x) : [];
+  // Free items can be archived products (not sold on their own), so they're resolved server-side.
+  const extras = p.combo?.includes?.length ? await getComboExtras(p.combo.includes.map(i => i.variant_id)) : [];
+  const comboIncludes = p.combo ? (p.combo.includes ?? []).map(i => { const e = extras.find(x => x.variant_id === i.variant_id); return e ? { ...e, qty: i.qty || 1 } : null; }).filter((x): x is ComboOption & { qty: number; worth: number } => !!x) : [];
   const related = all.filter(x => x.id !== p.id && x.concerns.some(c => p.concerns.includes(c))).slice(0, 4);
   const v = p.variants[0];
   const ld = { '@context': 'https://schema.org', '@graph': [
