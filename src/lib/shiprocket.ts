@@ -1,5 +1,6 @@
 import 'server-only';
 import { adminClient } from './server';
+import { selText, type Sel } from './combo';
 
 // Shiprocket integration. Credentials come from Vercel env (SHIPROCKET_EMAIL / SHIPROCKET_PASSWORD of an API user).
 // Shipment ids are looked up in Shiprocket by our order number (channel_order_id), so no extra DB columns are needed;
@@ -53,7 +54,7 @@ export async function findShipment(orderNo: string) {
 /** Create the order in Shiprocket, assign a courier/AWB and request pickup. Safe to call again: re-uses an existing shipment. */
 export async function shipOrder(orderId: string) {
   const db = adminClient();
-  const { data: o, error } = await db.from('orders').select('id, order_no, email, phone, full_name, address, subtotal, discount, shipping, total, payment_method, payment_status, status, created_at, awb, order_items(product_name, variant_label, sku, unit_price, qty, hsn)').eq('id', orderId).single();
+  const { data: o, error } = await db.from('orders').select('id, order_no, email, phone, full_name, address, subtotal, discount, shipping, total, payment_method, payment_status, status, created_at, awb, order_items(*)').eq('id', orderId).single();
   if (error || !o) throw new Error('Order not found');
   if (o.status === 'cancelled' || o.status === 'returned') throw new Error(`Order is ${o.status}.`);
   if (o.payment_method !== 'cod' && o.payment_status !== 'paid') throw new Error('Online payment not received yet — only paid or COD orders can be shipped.');
@@ -70,7 +71,7 @@ export async function shipOrder(orderId: string) {
       billing_customer_name: first, billing_last_name: rest.join(' '), billing_address: a.line1 || '', billing_address_2: [a.line2, a.landmark && `Near ${a.landmark}`].filter(Boolean).join(', '),
       billing_city: a.city || '', billing_pincode: a.pincode || '', billing_state: a.state || '', billing_country: 'India', billing_email: o.email, billing_phone: String(o.phone).replace(/\D/g, '').slice(-10),
       shipping_is_billing: true,
-      order_items: (o.order_items ?? []).map((i: { product_name: string; variant_label: string; sku: string; unit_price: number; qty: number; hsn: string | null }) => ({ name: `${i.product_name} ${i.variant_label}`.trim(), sku: i.sku, units: i.qty, selling_price: Number(i.unit_price), discount: 0, tax: '', hsn: i.hsn || '' })),
+      order_items: (o.order_items ?? []).map((i: { product_name: string; variant_label: string; sku: string; unit_price: number; qty: number; hsn: string | null; selections?: Sel[] | null }) => ({ name: `${i.product_name} ${i.variant_label}${i.selections?.length ? ` [${selText(i.selections, ' + ')}]` : ''}`.trim().slice(0, 250), sku: i.sku, units: i.qty, selling_price: Number(i.unit_price), discount: 0, tax: '', hsn: i.hsn || '' })),
       payment_method: o.payment_method === 'cod' ? 'COD' : 'Prepaid',
       sub_total: Number(o.subtotal), shipping_charges: Number(o.shipping), total_discount: Number(o.discount),
       length: cfg.sr_l, breadth: cfg.sr_b, height: cfg.sr_h, weight: Math.max(0.1, Math.round(cfg.sr_weight * units * 100) / 100),

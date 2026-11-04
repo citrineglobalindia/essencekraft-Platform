@@ -12,8 +12,9 @@ async function staffPost(path: string, body: unknown) {
   return j;
 }
 import { inr } from '@/lib/format';
+import { selText, type Sel } from '@/lib/combo';
 
-type Item = { id: number; product_name: string; variant_label: string; sku: string; unit_price: number; qty: number };
+type Item = { id: number; product_name: string; variant_label: string; sku: string; unit_price: number; qty: number; selections?: Sel[] | null };
 type O = { id: string; order_no: string; full_name: string; email: string; phone: string; address: Record<string, string>; subtotal: number; discount: number; shipping: number; total: number; coupon_code: string | null;
   status: string; payment_status: string; payment_method: string; payment_ref: string | null; tracking_url: string | null; courier: string | null; awb: string | null; expected_delivery: string | null; invoice_no: string | null; notes: string | null; marketing_consent: boolean; created_at: string;
   first_touch: Record<string, string> | null; last_touch: Record<string, string> | null; order_items: Item[]; order_events?: { id: number; status: string; note: string | null; created_at: string }[] };
@@ -58,7 +59,7 @@ export default function OrderDetail({ params }: { params: { id: string } }) {
     <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))', alignItems: 'start' }}>
       <section className="panel"><h2>Items</h2>
         <div className="table-wrap"><table><thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead><tbody>
-          {o.order_items.map(i => <tr key={i.id}><td>{i.product_name}<br /><small className="muted">{i.variant_label} · {i.sku}</small></td><td>{i.qty}</td><td>{inr(i.unit_price * i.qty)}</td></tr>)}
+          {o.order_items.map(i => <tr key={i.id}><td>{i.product_name}<br /><small className="muted">{i.variant_label} · {i.sku}</small>{i.selections?.length ? <><br /><small className="combo-pack">Pack: {selText(i.selections)}</small></> : null}</td><td>{i.qty}</td><td>{inr(i.unit_price * i.qty)}</td></tr>)}
         </tbody></table></div>
         <div className="totals" style={{ marginTop: 12 }}>
           <div><span>Subtotal</span><span>{inr(o.subtotal)}</span></div>

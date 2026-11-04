@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { db, refreshStore } from '@/lib/admin';
 import { Bottle } from '@/components/Bottle';
+import { ComboEditor } from '@/components/ComboEditor';
+import type { Combo } from '@/lib/types';
 
 type Variant = { id?: string; sku: string; label: string; price: number; compare_at: number | null; stock: number; low_stock_threshold: number; allow_backorder: boolean; sort: number; _new?: boolean; _initial?: number };
 type Opt = { id: string; name: string; slug: string };
@@ -16,14 +18,22 @@ export default function EditProduct({ params }: { params: { id: string } }) {
   const [p, setP] = useState(blank); const [vars, setVars] = useState<Variant[]>([]);
   const [cats, setCats] = useState<Opt[]>([]); const [cons, setCons] = useState<Opt[]>([]); const [picked, setPicked] = useState<string[]>([]);
   const [msg, setMsg] = useState<{ t: 'ok' | 'error'; m: string } | null>(null); const [busy, setBusy] = useState(false);
+  const [combo, setCombo] = useState<Combo | null>(null); const [wasCombo, setWasCombo] = useState(false);
 
   useEffect(() => {
     db().from('categories').select('id,name,slug').order('sort').then(({ data }) => setCats(data ?? []));
     db().from('concerns').select('id,name,slug').order('sort').then(({ data }) => setCons(data ?? []));
-    if (isNew) { setVars([{ sku: '', label: '15 ml', price: 499, compare_at: 699, stock: 0, low_stock_threshold: 10, allow_backorder: false, sort: 0, _new: true, _initial: 0 }]); return; }
+    if (isNew) {
+      if (new URLSearchParams(window.location.search).get('combo')) { // “Create combo” from the products list
+        setCombo({ pick: 2, options: [], includes: [], allow_repeat: true });
+        setP(x => ({ ...x, name: 'Pick Any 2 Combo', slug: 'pick-any-2-combo', tagline: 'Choose any 2 oils — one special price.' }));
+        setVars([{ sku: 'COMBO-2', label: 'Combo', price: 799, compare_at: 999, stock: 50, low_stock_threshold: 5, allow_backorder: false, sort: 0, _new: true, _initial: 50 }]);
+      } else setVars([{ sku: '', label: '15 ml', price: 499, compare_at: 699, stock: 0, low_stock_threshold: 10, allow_backorder: false, sort: 0, _new: true, _initial: 0 }]);
+      return;
+    }
     db().from('products').select('*, variants(*), product_concerns(concern_id)').eq('id', params.id).single().then(({ data }) => {
       if (!data) return;
-      const { variants, product_concerns, ...rest } = data;
+      const { variants, product_concerns, combo: cb, ...rest } = data; setCombo(cb ?? null); setWasCombo(!!cb);
       setP({ ...blank, ...Object.fromEntries(Object.entries(rest).map(([k, v]) => [k, v ?? ''])), uses: (rest.uses ?? []).join('\n'), suggested_blends: (rest.suggested_blends ?? []).join(', '), images: rest.images ?? [] });
       setVars((variants as Variant[]).sort((a, b) => a.sort - b.sort));
       setPicked(product_concerns.map((x: { concern_id: string }) => x.concern_id));
@@ -66,10 +76,16 @@ export default function EditProduct({ params }: { params: { id: string } }) {
     setMsg(null);
     if (!p.name || !p.slug) return setMsg({ t: 'error', m: 'Name and URL slug are required.' });
     if (vars.some(v => !v.sku || !v.label || v.price < 0)) return setMsg({ t: 'error', m: 'Every variant needs a SKU, size label and price.' });
+    if (combo) {
+      if (!combo.options.length) return setMsg({ t: 'error', m: 'Choose at least one product customers can pick for the combo.' });
+      if (combo.allow_repeat === false && combo.options.length < combo.pick) return setMsg({ t: 'error', m: `Customers must pick ${combo.pick} different items — add at least ${combo.pick} choices, or allow repeats.` });
+      if ((combo.includes ?? []).some(i => !i.variant_id)) return setMsg({ t: 'error', m: 'Choose a product for each free item, or remove the empty row.' });
+      if (vars.length !== 1) return setMsg({ t: 'error', m: 'A combo uses one price row — keep a single row in Variants & pricing.' });
+    }
     setBusy(true);
-    const row = { ...p, category_id: p.category_id || null, uses: p.uses.split('\n').map(s => s.trim()).filter(Boolean), suggested_blends: p.suggested_blends.split(',').map(s => s.trim()).filter(Boolean), updated_at: new Date().toISOString() };
+    const row = { ...p, category_id: p.category_id || null, uses: p.uses.split('\n').map(s => s.trim()).filter(Boolean), suggested_blends: p.suggested_blends.split(',').map(s => s.trim()).filter(Boolean), updated_at: new Date().toISOString(), ...(combo || wasCombo ? { combo } : {}) };
     const res = isNew ? await db().from('products').insert(row).select('id').single() : await db().from('products').update(row).eq('id', params.id).select('id').single();
-    if (res.error) { setBusy(false); return setMsg({ t: 'error', m: res.error.message }); }
+    if (res.error) { setBusy(false); return setMsg({ t: 'error', m: /combo/.test(res.error.message) ? 'Combos need a one-time database update (0010_combos) before they can be saved.' : res.error.message }); }
     const pid = res.data.id;
     await db().from('product_concerns').delete().eq('product_id', pid);
     if (picked.length) await db().from('product_concerns').insert(picked.map(concern_id => ({ product_id: pid, concern_id })));
@@ -118,6 +134,7 @@ export default function EditProduct({ params }: { params: { id: string } }) {
         <input type="file" accept="image/webp,image/jpeg,image/png,image/avif" onChange={e => e.target.files?.[0] && upload(e.target.files[0])} />
         <small className="muted">First image is the main product photo. Use WebP, at least 1200×1200. Without images the store shows the illustrated bottle.</small>
       </section>
+      <ComboEditor value={combo} onChange={setCombo} selfId={isNew ? undefined : params.id} />
       <section className="panel form-grid"><h2>SEO</h2>{T('seo_title', 'Page title')}{T('seo_description', 'Meta description', true)}</section>
     </div>
     <section className="panel"><div className="admin-bar" style={{ marginBottom: 12 }}><h2 style={{ margin: 0 }}>Variants &amp; pricing</h2>

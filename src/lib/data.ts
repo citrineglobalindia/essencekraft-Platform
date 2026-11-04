@@ -5,7 +5,7 @@ import * as seed from './seed';
 import type { Product, Concern, Category } from './types';
 
 const SELECT = `id, slug, name, botanical_name, tagline, description, aroma, extraction, origin, uses, suggested_blends,
-  safety, purity, color, images, is_bestseller, is_new, rating, review_count, seo_title, seo_description, created_at,
+  safety, purity, color, images, is_bestseller, is_new, rating, review_count, seo_title, seo_description, created_at, combo,
   category:categories(slug), product_concerns(concern:concerns(slug)),
   variants(id, sku, label, price, compare_at, stock, low_stock_threshold, allow_backorder, sort)`;
 
@@ -23,7 +23,10 @@ function map(r: any): Product {
 
 export const getProducts = cache(async (): Promise<Product[]> => {
   if (!hasSupabase) return seed.products;
-  const { data, error } = await publicClient().from('products').select(SELECT).eq('status', 'active').order('name');
+  const q = (sel: string) => publicClient().from('products').select(sel).eq('status', 'active').order('name') as unknown as Promise<{ data: unknown[] | null; error: { message: string } | null }>;
+  let { data, error } = await q(SELECT);
+  // Before migration 0010 the combo column doesn't exist yet — fall back so the store keeps working.
+  if (error && /combo/.test(error.message)) ({ data, error } = await q(SELECT.replace(' combo,', '')));
   if (error) { console.error(error); return []; }
   return (data ?? []).map(map);
 });

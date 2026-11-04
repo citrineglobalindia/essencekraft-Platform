@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { CartLine } from './types';
+import { lineKey, type CartLine } from './types';
 import { track } from './attribution';
 
 type Ctx = {
@@ -33,14 +33,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     subtotal: lines.reduce((s, l) => s + l.qty * l.price, 0),
     add: (l, qty = 1) => {
       setLines(cur => {
-        const ex = cur.find(c => c.variant_id === l.variant_id);
-        return ex ? cur.map(c => c.variant_id === l.variant_id ? { ...c, qty: Math.min(c.qty + qty, 20) } : c) : [...cur, { ...l, qty }];
+        const k = lineKey(l); const ex = cur.find(c => lineKey(c) === k);
+        return ex ? cur.map(c => lineKey(c) === k ? { ...c, qty: Math.min(c.qty + qty, 20) } : c) : [...cur, { ...l, qty }];
       });
       track('add_to_cart', { currency: 'INR', value: l.price * qty, items: [{ item_id: l.variant_id, item_name: l.name, item_variant: l.label, price: l.price, quantity: qty }] });
       setOpen(true);
     },
-    setQty: (id, qty) => setLines(cur => qty <= 0 ? cur.filter(c => c.variant_id !== id) : cur.map(c => c.variant_id === id ? { ...c, qty: Math.min(qty, 20) } : c)),
-    remove: id => setLines(cur => cur.filter(c => c.variant_id !== id)),
+    // id = line key (variant id, or variant id + picks for combos)
+    setQty: (id, qty) => setLines(cur => qty <= 0 ? cur.filter(c => lineKey(c) !== id) : cur.map(c => lineKey(c) === id ? { ...c, qty: Math.min(qty, 20) } : c)),
+    remove: id => setLines(cur => cur.filter(c => lineKey(c) !== id)),
     clear: () => setLines([]),
     toggleWish: slug => setWishlist(w => w.includes(slug) ? w.filter(s => s !== slug) : [...w, slug]),
   }), [lines, open, wishlist]);

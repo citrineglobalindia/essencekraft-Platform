@@ -1,4 +1,5 @@
 'use client';
+import { lineKey } from '@/lib/types';
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { useCart } from '@/lib/cart';
@@ -39,10 +40,10 @@ export function CartDrawer({ freeShip }: { freeShip: number }) {
             <div className="progress"><i style={{ width: `${Math.min(100, (subtotal / freeShip) * 100)}%` }} /></div>
           </div>
           {lines.map(l => (
-            <div className="cart-line" key={l.variant_id}>
+            <div className="cart-line" key={lineKey(l)}>
               <div className="thumb"><Bottle color={l.color} /></div>
-              <div><Link href={`/product/${l.product_slug}`} onClick={() => setOpen(false)}><b>{l.name}</b></Link><div className="muted" style={{ fontSize: 13 }}>{l.label} · {inr(l.price)}</div>
-                <div style={{ marginTop: 6 }}><QtyControl qty={l.qty} label={l.name} onChange={n => setQty(l.variant_id, n)} /></div></div>
+              <div><Link href={`/product/${l.product_slug}`} onClick={() => setOpen(false)}><b>{l.name}</b></Link><div className="muted" style={{ fontSize: 13 }}>{l.label} · {inr(l.price)}</div>{l.picks?.length ? <div className="muted combo-picks">Your picks: {l.picks.join(', ')}</div> : null}
+                <div style={{ marginTop: 6 }}><QtyControl qty={l.qty} label={l.name} onChange={n => setQty(lineKey(l), n)} /></div></div>
               <b>{inr(l.price * l.qty)}</b>
             </div>))}
         </>}

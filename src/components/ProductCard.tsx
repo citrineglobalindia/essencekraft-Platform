@@ -30,7 +30,9 @@ export function ProductCard({ p, list = 'grid' }: { p: Product; list?: string })
           <span className="price">{inr(v.price)}</span>
           {off > 0 && <><span className="cmp">{inr(v.compare_at!)}</span><span className="off">{off}% OFF</span></>}
         </div>
-        {allOut
+        {p.combo
+          ? <Link className="btn btn-primary" href={`/product/${p.slug}`}>Choose {p.combo.pick} items</Link>
+          : allOut
           ? <Link className="btn btn-ghost" href={`/product/${p.slug}#notify`}>Notify me</Link>
           : p.variants.length > 1
             ? <button className="btn btn-primary" onClick={() => add({ variant_id: v.id, product_slug: p.slug, name: p.name, label: v.label, price: v.price, color: p.color })}><CartIcon size={18} /> Add {v.label}</button>

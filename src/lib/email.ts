@@ -1,5 +1,6 @@
 import 'server-only';
 import { adminClient } from './server';
+import { selText } from './combo';
 
 const FROM = { name: 'EssenceKraft', email: process.env.EMAIL_FROM || 'no-reply@essencekraft.in' };
 const inr = (n: number) => '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -28,7 +29,7 @@ export async function sendOrderConfirmation(orderNo: string, origin: string) {
     .maybeSingle();
   if (!o) return false;
   const [{ data: items }, { data: st }] = await Promise.all([
-    db.from('order_items').select('product_name, variant_label, unit_price, qty').eq('order_id', o.id),
+    db.from('order_items').select('*').eq('order_id', o.id),
     db.from('settings').select('value').eq('key', 'store').maybeSingle(),
   ]);
   const store = (st?.value ?? {}) as { email?: string; support_email?: string; order_alert_email?: string };
@@ -36,7 +37,7 @@ export async function sendOrderConfirmation(orderNo: string, origin: string) {
   const link = `${origin}/order/${o.order_no}?t=${o.access_token}`;
   const inv = `${origin}/order/${o.order_no}/invoice?t=${o.access_token}`;
   const paid = o.payment_status === 'paid';
-  const rows = (items ?? []).map(i => `<tr><td style="padding:8px 0;border-bottom:1px solid #eee">${esc(i.product_name)}<br><small style="color:#777">${esc(i.variant_label)} × ${i.qty}</small></td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right">${inr(Number(i.unit_price) * i.qty)}</td></tr>`).join('');
+  const rows = (items ?? []).map(i => `<tr><td style="padding:8px 0;border-bottom:1px solid #eee">${esc(i.product_name)}<br><small style="color:#777">${esc(i.variant_label)} × ${i.qty}${i.selections?.length ? `<br>Your picks: ${esc(selText(i.selections))}` : ''}</small></td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right">${inr(Number(i.unit_price) * i.qty)}</td></tr>`).join('');
   const line = (l: string, v: string, b = false) => `<tr><td style="padding:3px 0;${b ? 'font-weight:700' : 'color:#555'}">${l}</td><td style="padding:3px 0;text-align:right;${b ? 'font-weight:700' : ''}">${v}</td></tr>`;
   const html = `<!doctype html><html><body style="margin:0;background:#f6f3ee;font-family:Arial,Helvetica,sans-serif;color:#222">
 <div style="max-width:560px;margin:0 auto;padding:24px 16px">

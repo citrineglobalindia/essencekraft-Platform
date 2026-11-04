@@ -932,3 +932,28 @@ tr:last-child td { border-bottom: 0; }
 .auth-switch, .auth-alt { margin: 0; text-align: center; font-size: 14px; } .auth-switch .link { font-weight: 700; font-size: 15px; } .auth-alt { font-size: 12.5px; }
 @media (max-height: 700px) and (min-width: 721px) { .auth-body { padding: 18px 28px 14px; gap: 7px; } .auth-logo img { height: 28px; } .auth-body h2 { font-size: 1.6rem; } .auth-field, .auth-submit { height: 42px; } }
 @media (max-width: 639px) { .auth-pop { grid-template-columns: 1fr; } .auth-body { padding: 16px 18px 18px; } .auth-leaf { display: none; } .auth-logo img { height: 28px; } }
+/* Combo products (pick any N) */
+.combo-tag { display: inline-block; font-size: 11.5px; letter-spacing: .14em; font-weight: 700; color: #a8661a; margin-bottom: 6px; }
+.combo-free { padding: 10px 14px; border-radius: 10px; background: #eef4ef; border: 1px dashed var(--leaf, #3f6b3a); font-size: 14px; font-weight: 600; color: var(--forest); }
+.combo-slot { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line, #e6e0d4); border-radius: 12px; background: #fff; }
+.combo-slot.active { border-color: var(--forest); box-shadow: 0 0 0 3px rgba(47,74,58,.08); }
+.combo-slot-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14.5px; }
+.combo-chosen { color: var(--forest); font-weight: 600; font-size: 13.5px; }
+.combo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.combo-opt { position: relative; display: grid; justify-items: center; gap: 4px; padding: 6px 4px 8px; border: 1.5px solid #e3dfd3; border-radius: 10px; background: #fcfbf8; cursor: pointer; font: inherit; color: inherit; }
+.combo-opt:hover:not(:disabled) { border-color: #9fc2a8; }
+.combo-opt[aria-checked="true"] { border-color: var(--forest); background: #eef4ef; box-shadow: inset 0 0 0 1px var(--forest); }
+.combo-opt[aria-checked="true"]::after { content: '✓'; position: absolute; top: 4px; right: 6px; width: 18px; height: 18px; border-radius: 50%; background: var(--forest); color: #fff; font-size: 11px; display: grid; place-items: center; }
+.combo-opt:disabled { opacity: .45; cursor: not-allowed; }
+.combo-img { width: 56px; height: 56px; display: grid; place-items: center; overflow: hidden; border-radius: 8px; } .combo-img img { width: 100%; height: 100%; object-fit: cover; } .combo-img svg { height: 52px; width: auto; }
+.combo-name { font-size: 12px; line-height: 1.2; text-align: center; font-weight: 600; }
+.combo-oos { font-size: 10.5px; color: #b3261e; }
+.combo-box { padding: 12px 14px; border-radius: 12px; background: #f8f4ec; border: 1px solid #ece4d3; display: grid; gap: 6px; font-size: 14px; }
+.combo-box ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+.combo-free-tag { font-size: 10.5px; font-weight: 700; color: #fff; background: var(--leaf, #3f6b3a); border-radius: 4px; padding: 1px 6px; margin-left: 4px; }
+.combo-picks { font-size: 12.5px; margin-top: 2px; }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+@media (max-width: 639px) { .combo-grid { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 82px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x proximity; } .combo-opt { scroll-snap-align: start; } }
+.combo-ed-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 12px; max-height: 260px; overflow-y: auto; padding: 8px; border: 1px solid #ece8de; border-radius: 10px; background: #fff; margin: 8px 0 4px; }
+.combo-ed-list .check { font-size: 13.5px; padding: 4px 6px; border-radius: 6px; } .combo-ed-list .check.on { background: #eef4ef; }
+.combo-pack { color: #a8661a; font-weight: 600; }

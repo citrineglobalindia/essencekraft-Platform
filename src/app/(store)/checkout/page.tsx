@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { lineKey } from '@/lib/types';
 import { AuthModal } from '@/components/AuthModal';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -40,7 +41,7 @@ export default function Checkout() {
     const t = setTimeout(() => {
       let token = ''; try { token = localStorage.getItem('ek_cart_token') || crypto.randomUUID(); localStorage.setItem('ek_cart_token', token); } catch { return; }
       browserClient().rpc('save_cart', { p_token: token, p_email: okEmail ? f.email : null, p_phone: okPhone ? f.phone.replace(/^\+?91/, '') : null, p_name: f.full_name || null,
-        p_lines: lines.map(l => ({ variant_id: l.variant_id, product_slug: l.product_slug, name: l.name, label: l.label, price: l.price, qty: l.qty, color: l.color })), p_subtotal: subtotal, p_consent: consent }).then(() => {}, () => {});
+        p_lines: lines.map(l => ({ variant_id: l.variant_id, product_slug: l.product_slug, name: l.name, label: l.label, price: l.price, qty: l.qty, ...(l.selections ? { selections: l.selections, picks: l.picks, key: l.key } : {}), color: l.color })), p_subtotal: subtotal, p_consent: consent }).then(() => {}, () => {});
     }, 1200);
     return () => clearTimeout(t);
   }, [f.email, f.phone, f.full_name, lines, subtotal, consent]);
@@ -80,7 +81,7 @@ export default function Checkout() {
     const payload = {
       email: f.email.trim(), phone: f.phone.replace(/^\+?91/, ''), full_name: f.full_name.trim(), payment_method: method, consent,
       coupon: coupon?.code ?? '', address: { line1: f.line1, line2: f.line2, landmark: f.landmark, city: f.city, state: f.state, pincode: f.pincode, country: 'IN' },
-      items: lines.map(l => ({ variant_id: l.variant_id, qty: l.qty })), ...getAttribution(),
+      items: lines.map(l => ({ variant_id: l.variant_id, qty: l.qty, ...(l.selections ? { selections: l.selections } : {}) })), ...getAttribution(),
     };
     try {
       let order_no: string, token: string;
@@ -150,7 +151,7 @@ export default function Checkout() {
       </div>
       <aside style={{ alignSelf: 'start', position: 'sticky', top: 90 }}>
         <section className="panel"><h2>Order summary</h2>
-          {lines.map(l => <div key={l.variant_id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 14, padding: '6px 0' }}><span>{l.name} <span className="muted">· {l.label} × {l.qty}</span></span><b>{inr(l.price * l.qty)}</b></div>)}
+          {lines.map(l => <div key={lineKey(l)} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 14, padding: '6px 0' }}><span>{l.name} <span className="muted">· {l.label} × {l.qty}</span>{l.picks?.length ? <><br /><small className="muted">{l.picks.join(' + ')}</small></> : null}</span><b>{inr(l.price * l.qty)}</b></div>)}
           <div style={{ display: 'flex', gap: 8, margin: '12px 0' }}><label className="sr" htmlFor="coupon">Coupon code</label><input id="coupon" className="input" placeholder="Coupon code" value={code} onChange={e => setCode(e.target.value)} /><button className="btn btn-ghost" onClick={applyCoupon}>Apply</button></div>
           {couponMsg && <p className={coupon ? 'notice ok' : 'err'} style={{ marginBottom: 10 }}>{couponMsg}</p>}
           <div className="totals">

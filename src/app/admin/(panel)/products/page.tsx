@@ -24,7 +24,7 @@ export default function Products() {
         <input className="input" placeholder="Search products" value={q} onChange={e => setQ(e.target.value)} aria-label="Search products" />
         <select className="select" value={status} onChange={e => setStatus(e.target.value)} aria-label="Status"><option value="all">All statuses</option><option value="active">Active</option><option value="draft">Draft</option><option value="archived">Archived</option></select>
       </div>
-      <Link className="btn btn-primary btn-sm" href="/admin/products/new">Add product</Link>
+      <Link className="btn btn-ghost btn-sm" href="/admin/products/new?combo=1">Create combo</Link><Link className="btn btn-primary btn-sm" href="/admin/products/new">Add product</Link>
     </div>
     {msg && <p className={`notice ${msg.t}`} role="status">{msg.m}</p>}
     <div className="table-wrap"><table>

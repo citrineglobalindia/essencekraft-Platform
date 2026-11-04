@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { getProduct, getProducts, getConcerns } from '@/lib/data';
 import { Gallery, ProductBuy } from '@/components/ProductBuy';
 import { PinCheck } from '@/components/PinCheck';
+import { ComboBuy, type ComboOption } from '@/components/ComboBuy';
 import { ProductCard } from '@/components/ProductCard';
 import { SITE_URL } from '@/lib/format';
 
@@ -19,6 +20,11 @@ export default async function ProductPage({ params }: { params: { slug: string }
   const [p, all, concerns] = await Promise.all([getProduct(params.slug), getProducts(), getConcerns()]);
   if (!p) notFound();
   const carrier = p.category !== 'carrier-oils' ? all.find(x => x.category === 'carrier-oils') : null;
+  // Combo: resolve option / free-item variant ids to active products (out-of-stock options stay visible but disabled)
+  const vmap = new Map(all.flatMap(x => x.variants.map(v => [v.id, { x, v }] as const)));
+  const opt = (id: string): ComboOption | null => { const m = vmap.get(id); return m ? { variant_id: id, slug: m.x.slug, name: m.x.name, label: m.v.label, image: m.x.images[0], color: m.x.color, available: m.v.stock > 0 || m.v.allow_backorder } : null; };
+  const comboOptions = p.combo ? p.combo.options.map(opt).filter((o): o is ComboOption => !!o) : [];
+  const comboIncludes = p.combo ? (p.combo.includes ?? []).map(i => { const o = opt(i.variant_id); const m = vmap.get(i.variant_id); return o && m ? { ...o, qty: i.qty || 1, worth: m.v.compare_at ?? m.v.price } : null; }).filter((x): x is ComboOption & { qty: number; worth: number } => !!x) : [];
   const related = all.filter(x => x.id !== p.id && x.concerns.some(c => p.concerns.includes(c))).slice(0, 4);
   const v = p.variants[0];
   const ld = { '@context': 'https://schema.org', '@graph': [
@@ -38,12 +44,12 @@ export default async function ProductPage({ params }: { params: { slug: string }
       <div className="pdp">
         <Gallery p={p} />
         <div style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
-          <ProductBuy p={p} pairWith={carrier} />
+          {p.combo ? <ComboBuy p={p} options={comboOptions} includes={comboIncludes} /> : <ProductBuy p={p} pairWith={carrier} />}
           <PinCheck />
           <dl className="facts">{facts.map(([k, x]) => <div key={k}><dt>{k}</dt><dd>{x}</dd></div>)}</dl>
           {p.safety && <div className="safety" role="note"><strong>Safety &amp; dilution</strong>{p.safety}</div>}
           <div>
-            <details className="acc" open><summary>About this oil</summary><div><p>{p.description}</p></div></details>
+            <details className="acc" open><summary>{p.combo ? 'About this combo' : 'About this oil'}</summary><div><p>{p.description}</p></div></details>
             {p.uses.length > 0 && <details className="acc"><summary>How to use</summary><div><ul>{p.uses.map(u => <li key={u}>{u}</li>)}</ul></div></details>}
             {p.suggested_blends.length > 0 && <details className="acc"><summary>Blends well with</summary><div><p>{p.suggested_blends.join(', ')}</p></div></details>}
             {p.purity && <details className="acc"><summary>Purity &amp; testing</summary><div><p>{p.purity}</p></div></details>}

@@ -1,4 +1,5 @@
 'use client';
+import { selText, type Sel } from '@/lib/combo';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -7,7 +8,7 @@ import { inr, WHATSAPP } from '@/lib/format';
 import { payOrder } from '@/lib/pay';
 import { track } from '@/lib/attribution';
 
-type Item = { product_name?: string; name?: string; variant_label?: string; label?: string; qty: number; unit_price?: number; price?: number };
+type Item = { product_name?: string; name?: string; variant_label?: string; label?: string; qty: number; unit_price?: number; price?: number; selections?: Sel[] | null };
 type Order = { order_no: string; status: string; payment_status: string; payment_method: string; total: number; subtotal: number; discount: number; shipping: number;
   full_name: string; email: string; address: Record<string, string>; items: Item[]; created_at: string; tracking_url?: string; referral_code?: string | null;
   courier?: string | null; awb?: string | null; expected_delivery?: string | null; invoice_no?: string | null; events?: { status: string; note: string | null; at: string }[] };
@@ -77,7 +78,7 @@ export default function OrderPage({ params }: { params: { no: string } }) {
         <section className="panel"><h2>Delivering to</h2><p>{o.full_name}<br />{o.address.line1}{o.address.line2 ? `, ${o.address.line2}` : ''}<br />{o.address.city}, {o.address.state} {o.address.pincode}</p></section>
       </div>
       <aside className="panel" style={{ alignSelf: 'start' }}><h2>Summary</h2>
-        {o.items.map((i, k) => <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 14, padding: '6px 0' }}><span>{i.product_name ?? i.name} <span className="muted">· {i.variant_label ?? i.label} × {i.qty}</span></span><b>{inr(Number(i.unit_price ?? i.price) * i.qty)}</b></div>)}
+        {o.items.map((i, k) => <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 14, padding: '6px 0' }}><span>{i.product_name ?? i.name} <span className="muted">· {i.variant_label ?? i.label} × {i.qty}</span>{i.selections?.length ? <><br /><small className="muted">Picks: {selText(i.selections)}</small></> : null}</span><b>{inr(Number(i.unit_price ?? i.price) * i.qty)}</b></div>)}
         <div className="totals" style={{ marginTop: 10 }}>
           <div><span>Subtotal</span><span>{inr(o.subtotal)}</span></div>
           {Number(o.discount) > 0 && <div><span>Discount</span><span>−{inr(o.discount)}</span></div>}

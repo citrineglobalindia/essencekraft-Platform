@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useCart } from '@/lib/cart';
 import { hasSupabase, browserClient } from '@/lib/supabase';
-import type { CartLine } from '@/lib/types';
+import { lineKey, type CartLine } from '@/lib/types';
 import { inr } from '@/lib/format';
 import { Bottle } from '@/components/Bottle';
 import { QtyControl } from '@/components/CartDrawer';
@@ -16,7 +16,7 @@ function Restore() {
     const t = sp.get('restore'); if (!t || done || !hasSupabase) return; setDone(true);
     browserClient().rpc('get_cart', { p_token: t }).then(({ data }) => {
       const saved = (data ?? []) as CartLine[];
-      saved.filter(s => !lines.some(l => l.variant_id === s.variant_id)).forEach(s => add({ variant_id: s.variant_id, product_slug: s.product_slug, name: s.name, label: s.label, price: s.price, color: s.color }, s.qty));
+      saved.filter(s => !lines.some(l => lineKey(l) === lineKey(s))).forEach(s => add({ variant_id: s.variant_id, product_slug: s.product_slug, name: s.name, label: s.label, price: s.price, color: s.color, ...(s.selections ? { selections: s.selections, picks: s.picks, key: s.key } : {}) }, s.qty));
       setOpen(false); try { localStorage.setItem('ek_cart_token', t); } catch {}
     });
   }, [sp, done, lines, add, setOpen]);
@@ -30,10 +30,10 @@ function CartView() {
     <div className="wrap checkout">
       <div className="panel"><h1 style={{ fontSize: '1.8rem', marginBottom: 8 }}>Your cart</h1>
         {lines.map(l => (
-          <div className="cart-line" key={l.variant_id}>
+          <div className="cart-line" key={lineKey(l)}>
             <div className="thumb"><Bottle color={l.color} /></div>
-            <div><Link href={`/product/${l.product_slug}`}><b>{l.name}</b></Link><div className="muted" style={{ fontSize: 13 }}>{l.label} · {inr(l.price)} each</div>
-              <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginTop: 8 }}><QtyControl qty={l.qty} label={l.name} onChange={n => setQty(l.variant_id, n)} /><button className="link" onClick={() => remove(l.variant_id)}>Remove</button></div></div>
+            <div><Link href={`/product/${l.product_slug}`}><b>{l.name}</b></Link><div className="muted" style={{ fontSize: 13 }}>{l.label} · {inr(l.price)} each</div>{l.picks?.length ? <div className="muted combo-picks">Your picks: {l.picks.join(', ')}</div> : null}
+              <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginTop: 8 }}><QtyControl qty={l.qty} label={l.name} onChange={n => setQty(lineKey(l), n)} /><button className="link" onClick={() => remove(lineKey(l))}>Remove</button></div></div>
             <b>{inr(l.qty * l.price)}</b>
           </div>))}
       </div>

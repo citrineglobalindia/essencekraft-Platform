@@ -1,6 +1,7 @@
 'use client';
+import { selText, type Sel } from '@/lib/combo';
 // GST tax invoice (prices are GST-inclusive). Intra-state → CGST+SGST, inter-state → IGST.
-type Item = { product_name: string; variant_label: string; sku: string; unit_price: number; qty: number; hsn?: string | null; gst_rate?: number | null };
+type Item = { product_name: string; variant_label: string; sku: string; unit_price: number; qty: number; hsn?: string | null; gst_rate?: number | null; selections?: Sel[] | null };
 export type InvOrder = { order_no: string; invoice_no: string | null; invoice_date: string | null; created_at: string; full_name: string; email: string; phone: string;
   address: Record<string, string>; subtotal: number; discount: number; shipping: number; total: number; payment_method: string; payment_status: string; coupon_code: string | null; items: Item[] };
 export type Seller = { legal_name?: string; gstin?: string; address?: string; support_email?: string; whatsapp?: string };
@@ -52,7 +53,7 @@ export function Invoice({ o, seller }: { o: InvOrder; seller: Seller }) {
       <section className="inv-parties"><div><h3>Bill to / Ship to</h3><p><b>{o.full_name}</b><br />{o.address.line1}{o.address.line2 ? `, ${o.address.line2}` : ''}<br />{o.address.city}, {o.address.state} {o.address.pincode}<br />{o.phone} · {o.email}</p></div></section>
       <div className="inv-table"><table>
         <thead><tr><th>#</th><th>Item</th><th>HSN</th><th>Qty</th><th>Rate</th><th>Discount</th><th>Taxable</th><th>GST</th>{t.intra ? <><th>CGST</th><th>SGST</th></> : <th>IGST</th>}<th>Total</th></tr></thead>
-        <tbody>{t.lines.map((l, i) => <tr key={i}><td>{i + 1}</td><td>{l.product_name}<br /><small>{l.variant_label} · {l.sku}</small></td><td>{l.hsn ?? '3301'}</td><td>{l.qty}</td><td>{money(Number(l.unit_price))}</td><td>{l.discount ? money(l.discount) : '—'}</td><td>{money(l.taxable)}</td><td>{l.rate}%</td>
+        <tbody>{t.lines.map((l, i) => <tr key={i}><td>{i + 1}</td><td>{l.product_name}<br /><small>{l.variant_label} · {l.sku}</small>{l.selections?.length ? <><br /><small>Includes: {selText(l.selections)}</small></> : null}</td><td>{l.hsn ?? '3301'}</td><td>{l.qty}</td><td>{money(Number(l.unit_price))}</td><td>{l.discount ? money(l.discount) : '—'}</td><td>{money(l.taxable)}</td><td>{l.rate}%</td>
           {t.intra ? <><td>{money(r2(l.tax / 2))}</td><td>{money(r2(l.tax - r2(l.tax / 2)))}</td></> : <td>{money(l.tax)}</td>}<td>{money(l.total)}</td></tr>)}
           {Number(o.shipping) > 0 && <tr><td>{t.lines.length + 1}</td><td>Shipping &amp; handling</td><td>9965</td><td>1</td><td>{money(Number(o.shipping))}</td><td>—</td><td>{money(t.shipTaxable)}</td><td>{t.maxRate}%</td>
             {t.intra ? <><td>{money(r2(t.shipTax / 2))}</td><td>{money(r2(t.shipTax - r2(t.shipTax / 2)))}</td></> : <td>{money(t.shipTax)}</td>}<td>{money(Number(o.shipping))}</td></tr>}</tbody>
