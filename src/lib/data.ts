@@ -45,7 +45,9 @@ export const getCategories = cache(async (): Promise<Category[]> => {
   return data ?? [];
 });
 
-export type StoreSettings = { free_shipping_min: number; shipping_flat: number; cod_fee: number; announcement: string[]; hero?: { heading: string; subheading: string; cta: string; href: string }; sections: Record<string, boolean> };
+/** Homepage carousel slide managed in Admin → Homepage & content. */
+export type HeroSlide = { id: string; heading: string; copy: string; cta: string; href: string; image?: string; eyebrow?: string; active?: boolean };
+export type StoreSettings = { free_shipping_min: number; shipping_flat: number; cod_fee: number; announcement: string[]; hero?: { heading: string; subheading: string; cta: string; href: string }; slides?: HeroSlide[]; sections: Record<string, boolean> };
 export const getSettings = cache(async (): Promise<StoreSettings> => {
   const fallback: StoreSettings = { free_shipping_min: 999, shipping_flat: 79, cod_fee: 49, announcement: ['Free shipping on orders above ₹999', '10% off your first order with code WELCOME10', '100% pure essential oils · GC-MS tested', 'Made in India'], sections: {} };
   if (!hasSupabase) return fallback;

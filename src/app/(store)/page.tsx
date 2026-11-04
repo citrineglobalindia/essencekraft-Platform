@@ -15,12 +15,16 @@ export default async function Home() {
   const best = products.filter(p => p.is_bestseller).slice(0, 4);
   const fresh = [...products].filter(p => p.is_new).sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? '')).slice(0, 4);
   const bySlug = (s: string) => products.find(p => p.slug === s) ?? products[0];
-  const slides = [
+  const builtIn = [
     { id: 'hero-pure', heading: settings.hero?.heading || '100% Pure Essential Oils', copy: settings.hero?.subheading || 'Natural care for a calmer mind, healthier skin, stronger hair and a more balanced you.', cta: settings.hero?.cta || 'Shop Essential Oils', href: settings.hero?.href || '/shop?category=essential-oils', ...pick(bySlug('lavender-essential-oil')) },
     { id: 'hero-hair', heading: 'Rosemary for hair routines', copy: 'Steam-distilled rosemary, ready to blend with jojoba for a weekly scalp massage.', cta: 'Shop Hair & Scalp', href: '/concern/hair-scalp', ...pick(bySlug('rosemary-essential-oil')) },
     { id: 'hero-collection', heading: 'The alchemy of scent', copy: 'Pure, steam-distilled essential oils — crafted in India for mind, body and soul.', cta: 'Shop the collection', href: '/shop', color: '#c27a1a', name: 'EssenceKraft collection', image: BRAND.heroCollection },
     { id: 'hero-focus', heading: 'Bright oils for busy days', copy: 'Peppermint, lemongrass and sweet orange for a fresher-smelling desk.', cta: 'Shop Focus & Energy', href: '/concern/focus-energy', ...pick(bySlug('peppermint-essential-oil')) },
   ];
+  // Slides managed in Admin → Homepage & content (falls back to the built-in set until one is published)
+  const custom = (settings.slides ?? []).filter(s => s.active !== false && (s.heading || s.image))
+    .map(s => ({ id: s.id, heading: s.heading, copy: s.copy, cta: s.cta, href: s.href || '/shop', image: s.image || undefined, eyebrow: s.eyebrow, color: '#7a5a9e', name: s.heading || 'EssenceKraft' }));
+  const slides = custom.length ? custom : builtIn;
   return <>
     <Hero slides={slides} />
     {banner && <PromoBanner p={banner} />}
