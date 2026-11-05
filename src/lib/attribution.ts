@@ -20,7 +20,7 @@ export function getAttribution(): { first_touch: Touch | null; last_touch: Touch
     return { first_touch: JSON.parse(localStorage.getItem('ek_ft') || 'null'), last_touch: JSON.parse(localStorage.getItem('ek_lt') || 'null') };
   } catch { return { first_touch: null, last_touch: null }; }
 }
-export const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID ?? '994707213669198';
+export const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID ?? '2891828817859263';
 
 // GA4 event name → Meta Pixel standard event
 const META: Record<string, string> = { view_item: 'ViewContent', add_to_cart: 'AddToCart', begin_checkout: 'InitiateCheckout', add_payment_info: 'AddPaymentInfo', purchase: 'Purchase', generate_lead: 'Lead', sign_up: 'CompleteRegistration' };
