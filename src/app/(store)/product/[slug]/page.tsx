@@ -22,7 +22,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
   const carrier = p.category !== 'carrier-oils' ? all.find(x => x.category === 'carrier-oils') : null;
   // Combo: resolve option / free-item variant ids to active products (out-of-stock options stay visible but disabled)
   const vmap = new Map(all.flatMap(x => x.variants.map(v => [v.id, { x, v }] as const)));
-  const opt = (id: string): ComboOption | null => { const m = vmap.get(id); return m ? { variant_id: id, slug: m.x.slug, name: m.x.name, label: m.v.label, image: m.x.images[0], color: m.x.color, available: m.v.stock > 0 || m.v.allow_backorder } : null; };
+  const opt = (id: string): ComboOption | null => { const m = vmap.get(id); return m ? { variant_id: id, slug: m.x.slug, name: m.x.name, label: m.v.label, image: m.x.images[0], color: m.x.color, available: m.v.stock > 0 || m.v.allow_backorder, price: m.v.price, compare_at: m.v.compare_at ?? null } : null; };
   const comboOptions = p.combo ? p.combo.options.map(opt).filter((o): o is ComboOption => !!o) : [];
   // Free items can be archived products (not sold on their own), so they're resolved server-side.
   const extras = p.combo?.includes?.length ? await getComboExtras(p.combo.includes.map(i => i.variant_id)) : [];

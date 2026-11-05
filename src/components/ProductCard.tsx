@@ -27,7 +27,7 @@ export function ProductCard({ p, list = 'grid' }: { p: Product; list?: string })
         <p className="card-sub">{p.tagline}</p>
         <Stars rating={p.rating} count={p.review_count} />
         <div className="price-row">
-          <span className="price">{inr(v.price)}</span>
+          <span className="price">{p.combo?.pricing === 'dynamic' && <small className="muted" style={{ fontWeight: 500 }}>From </small>}{inr(v.price)}</span>
           {off > 0 && <><span className="cmp">{inr(v.compare_at!)}</span><span className="off">{off}% OFF</span></>}
         </div>
         {p.combo

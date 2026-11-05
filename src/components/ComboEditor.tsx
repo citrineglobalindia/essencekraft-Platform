@@ -7,6 +7,9 @@ type VOpt = { id: string; label: string; sku: string; stock: number; product: { 
 // Admin: “Pick any N” combo settings for a product.
 export function ComboEditor({ value, onChange, selfId }: { value: Combo | null; onChange: (c: Combo | null) => void; selfId?: string }) {
   const [all, setAll] = useState<VOpt[]>([]); const [q, setQ] = useState(''); const [withArchived, setWithArchived] = useState(false);
+  const [dynOk, setDynOk] = useState<boolean | null>(null);
+  // Dynamic pricing needs database update 0011 (the order function then charges the total of the picks).
+  useEffect(() => { db().rpc('combo_dynamic_supported').then(({ data, error }) => setDynOk(!error && data === true)); }, []);
   useEffect(() => {
     db().from('variants').select('id,label,sku,stock,product:products(id,name,status,combo)').order('sku').then(({ data, error }) => {
       if (error && /combo/.test(error.message)) return db().from('variants').select('id,label,sku,stock,product:products(id,name,status)').order('sku').then(r => setAll((r.data ?? []) as unknown as VOpt[]));
@@ -36,6 +39,12 @@ export function ComboEditor({ value, onChange, selfId }: { value: Combo | null; 
       <div className="field"><label htmlFor="cpick">Customer picks</label><select id="cpick" className="select" value={c.pick} onChange={e => set({ pick: Number(e.target.value) })}>{[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} item{n > 1 ? 's' : ''}</option>)}</select></div>
       <label className="check" style={{ alignSelf: 'end', paddingBottom: 10 }}><input type="checkbox" checked={c.allow_repeat !== false} onChange={e => set({ allow_repeat: e.target.checked })} />Allow picking the same item more than once</label>
     </div>
+    <fieldset className="field combo-pricing"><legend>Combo price</legend>
+      <label className="check"><input type="radio" name="cprice" checked={c.pricing !== 'dynamic'} onChange={() => set({ pricing: 'fixed' })} /><span><b>Fixed price</b> — one price for any picks (set it in <b>Variants &amp; pricing</b> below)</span></label>
+      <label className="check"><input type="radio" name="cprice" disabled={dynOk === false} checked={c.pricing === 'dynamic'} onChange={() => set({ pricing: 'dynamic' })} /><span><b>Total of the picked items</b> — the price is the sum of the {c.pick} items the customer picks, shown live as they choose</span></label>
+      {dynOk === false && <small className="muted">Needs a one-time database update (0011_combo_dynamic_price) before it can be used.</small>}
+      {c.pricing === 'dynamic' && <small className="muted">The Variants &amp; pricing row is then only used for the combo’s stock; its price is ignored. The shop shows “From ₹…” (the cheapest possible box).</small>}
+    </fieldset>
     <div className="field"><label>Customers choose from <small className="muted">({c.options.length} selected)</small></label>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <input className="input" style={{ maxWidth: 240 }} placeholder="Search products…" value={q} onChange={e => setQ(e.target.value)} />

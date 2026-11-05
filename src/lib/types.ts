@@ -13,7 +13,8 @@ export type Product = {
   combo?: Combo | null;
 };
 /** “Pick any N” combo: customer chooses `pick` items from `options` (variant ids); `includes` are free extras. */
-export type Combo = { pick: number; options: string[]; includes?: { variant_id: string; qty: number }[]; allow_repeat?: boolean };
+export type Combo = { pick: number; options: string[]; includes?: { variant_id: string; qty: number }[]; allow_repeat?: boolean;
+  /** fixed = the combo row's own price; dynamic = total of the picked items' prices */ pricing?: 'fixed' | 'dynamic' };
 export type Concern = { slug: string; name: string; intro: string; color: string };
 export type Category = { slug: string; name: string; intro: string };
 export type CartLine = { variant_id: string; product_slug: string; name: string; label: string; price: number; qty: number; color: string; image?: string;
