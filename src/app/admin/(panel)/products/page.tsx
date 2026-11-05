@@ -11,13 +11,29 @@ type Row = { id: string; slug: string; name: string; status: string; claim_statu
 export default function Products() {
   const [rows, setRows] = useState<Row[]>([]); const [q, setQ] = useState(''); const [status, setStatus] = useState('all');
   const [msg, setMsg] = useState<{ t: 'ok' | 'error'; m: string } | null>(null);
-  const load = () => db().from('products').select('id,slug,name,status,claim_status,color,images,is_bestseller,category:categories(name),variants(price,stock)').order('name').then(({ data }) => setRows((data ?? []) as unknown as Row[]));
+  const [busy, setBusy] = useState(false);
+  const load = async () => {
+    const sel = 'id,slug,name,status,claim_status,color,images,is_bestseller,category:categories(name),variants(price,stock)';
+    let { data, error } = await db().from('products').select(sel).order('sort', { nullsFirst: false }).order('name');
+    if (error) ({ data } = await db().from('products').select(sel).order('name')); // before migration 0012
+    setRows((data ?? []) as unknown as Row[]);
+  };
+  // Move a product one place up/down among the rows shown, then save the whole order.
+  const move = async (r: Row, dir: -1 | 1) => {
+    const i = list.indexOf(r), other = list[i + dir]; if (!other || busy) return;
+    const next = [...rows]; const a = next.indexOf(r), b = next.indexOf(other); [next[a], next[b]] = [next[b], next[a]];
+    setRows(next); setBusy(true);
+    const { error } = await db().rpc('reorder_products', { ids: next.map(x => x.id) });
+    setBusy(false);
+    if (error) { setMsg({ t: 'error', m: /reorder_products/.test(error.message) ? 'Product ordering needs a quick database update (migration 0012).' : error.message }); return load(); }
+    setMsg(null); refreshStore();
+  };
   useEffect(() => { load(); const d = new URLSearchParams(window.location.search).get('deleted'); if (d) setMsg({ t: 'ok', m: `“${d}” deleted.` }); }, []);
   const publish = async (r: Row) => { const { error } = await db().from('products').update({ status: 'active' }).eq('id', r.id); if (error) return setMsg({ t: 'error', m: error.message }); await refreshStore(r.slug); setMsg({ t: 'ok', m: `“${r.name}” is now live on the store.` }); load(); };
   const remove = async (r: Row) => { const res = await deleteProduct(r.id, r.name); if (res.msg) setMsg({ t: res.ok ? 'ok' : 'error', m: res.msg }); if (res.ok) load(); };
   const list = rows.filter(r => (status === 'all' || r.status === status) && r.name.toLowerCase().includes(q.toLowerCase()));
   return <>
-    <PageHead title="Products" sub="Catalogue, pricing, content and claims review." />
+    <PageHead title="Products" sub="Catalogue, pricing, content and claims review. Use ▲ ▼ to set the order products appear in on the store." />
     <Stats items={[['Products', rows.length], ['Active', rows.filter(r => r.status === 'active').length], ['Drafts', rows.filter(r => r.status === 'draft').length], ['Claims pending review', rows.filter(r => r.claim_status === 'pending').length, 'amber']]} />
     <div className="admin-bar">
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -28,9 +44,10 @@ export default function Products() {
     </div>
     {msg && <p className={`notice ${msg.t}`} role="status">{msg.m}</p>}
     <div className="table-wrap"><table>
-      <thead><tr><th></th><th>Product</th><th className="hide-sm">Category</th><th>Price</th><th>Stock</th><th>Status</th><th className="hide-sm">Claims</th><th></th></tr></thead>
-      <tbody>{list.map(r => { const stock = r.variants.reduce((s, v) => s + v.stock, 0); const min = Math.min(...r.variants.map(v => Number(v.price))); return (
+      <thead><tr><th style={{ width: 44 }} aria-label="Order"></th><th></th><th>Product</th><th className="hide-sm">Category</th><th>Price</th><th>Stock</th><th>Status</th><th className="hide-sm">Claims</th><th></th></tr></thead>
+      <tbody>{list.map((r, i) => { const stock = r.variants.reduce((s, v) => s + v.stock, 0); const min = Math.min(...r.variants.map(v => Number(v.price))); return (
         <tr key={r.id}>
+          <td className="order-cell"><button type="button" className="order-btn" onClick={() => move(r, -1)} disabled={busy || i === 0} aria-label={`Move ${r.name} up`} title="Move up">▲</button><button type="button" className="order-btn" onClick={() => move(r, 1)} disabled={busy || i === list.length - 1} aria-label={`Move ${r.name} down`} title="Move down">▼</button></td>
           <td style={{ width: 52 }}>{r.images?.[0] ? <img src={r.images[0]} alt="" width={40} height={40} style={{ borderRadius: 8, objectFit: 'cover', display: 'block' }} /> : <div style={{ width: 28 }}><Bottle color={r.color} /></div>}</td>
           <td><Link className="link" href={`/admin/products/${r.id}`}>{r.name}</Link>{r.is_bestseller && <span className="pill green" style={{ marginLeft: 6 }}>Best seller</span>}<br /><small className="muted">{r.variants.length} variant{r.variants.length === 1 ? '' : 's'}</small></td>
           <td className="hide-sm">{r.category?.name}</td>
@@ -40,7 +57,7 @@ export default function Products() {
           <td className="hide-sm"><span className={`pill ${r.claim_status === 'approved' ? 'green' : r.claim_status === 'rejected' ? 'red' : 'amber'}`}>{r.claim_status}</span></td>
           <td style={{ textAlign: 'right' }}><button className="link link-danger" onClick={() => remove(r)} aria-label={`Delete ${r.name}`}>Delete</button></td>
         </tr>); })}
-        {!list.length && <tr><td colSpan={8} className="muted">No products match.</td></tr>}</tbody>
+        {!list.length && <tr><td colSpan={9} className="muted">No products match.</td></tr>}</tbody>
     </table></div>
   </>;
 }

@@ -970,3 +970,8 @@ tr:last-child td { border-bottom: 0; }
 .combo-line-price { float: right; font-weight: 600; }
 .combo-total { display: flex; justify-content: space-between; align-items: baseline; padding-top: 8px; margin-top: 4px; border-top: 1px dashed #d9cfbb; font-size: 15px; } .combo-total b { font-size: 18px; color: var(--forest); }
 .combo-pricing { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; } .combo-pricing legend { font-weight: 600; font-size: 13.5px; margin-bottom: 4px; } .combo-pricing .check { align-items: flex-start; font-size: 14px; }
+/* Admin product order arrows */
+.order-cell{width:44px;white-space:nowrap}
+.order-btn{display:block;width:28px;height:22px;margin:1px 0;border:1px solid var(--line,#ddd);background:#fff;border-radius:6px;font-size:10px;line-height:1;cursor:pointer;color:inherit}
+.order-btn:hover:not(:disabled){background:#f3eefa;border-color:#7a5a9e}
+.order-btn:disabled{opacity:.3;cursor:default}

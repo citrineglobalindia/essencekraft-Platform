@@ -39,7 +39,7 @@ export function Catalog({ products, concerns, categories, lockedConcern }: { pro
     'price-asc': (a, b) => a.variants[0].price - b.variants[0].price,
     'price-desc': (a, b) => b.variants[0].price - a.variants[0].price,
     rating: (a, b) => b.rating - a.rating,
-    recommended: (a, b) => Number(b.is_bestseller) - Number(a.is_bestseller) || b.rating - a.rating,
+    recommended: () => 0, // keep the order set in Admin → Products
   };
   items = [...items].sort(cmp[sort] ?? cmp.recommended);
   const active = cats.length + cons.length + price.length + Number(inStock) + Number(offer);

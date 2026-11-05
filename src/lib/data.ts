@@ -23,10 +23,13 @@ function map(r: any): Product {
 
 export const getProducts = cache(async (): Promise<Product[]> => {
   if (!hasSupabase) return seed.products;
-  const q = (sel: string) => publicClient().from('products').select(sel).eq('status', 'active').order('name') as unknown as Promise<{ data: unknown[] | null; error: { message: string } | null }>;
+  const q = (sel: string, sort = true) => publicClient().from('products').select(sel).eq('status', 'active').order(sort ? 'sort' : 'name', { nullsFirst: false }).order('name') as unknown as Promise<{ data: unknown[] | null; error: { message: string } | null }>;
   let { data, error } = await q(SELECT);
+  // Before migration 0012 there's no sort column — fall back to A–Z.
+  let sorted = true;
+  if (error && /sort/.test(error.message)) { sorted = false; ({ data, error } = await q(SELECT, false)); }
   // Before migration 0010 the combo column doesn't exist yet — fall back so the store keeps working.
-  if (error && /combo/.test(error.message)) ({ data, error } = await q(SELECT.replace(' combo,', '')));
+  if (error && /combo/.test(error.message)) ({ data, error } = await q(SELECT.replace(' combo,', ''), sorted));
   if (error) { console.error(error); return []; }
   const list = (data ?? []).map(map);
   // Dynamic-price combos: show the lowest possible total of N picks (marked “From” on cards)
