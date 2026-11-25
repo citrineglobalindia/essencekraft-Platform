@@ -824,20 +824,42 @@ tr:last-child td { border-bottom: 0; }
 .adm-wiki { display: grid; gap: 16px; } @media (min-width: 1100px) { .adm-wiki { grid-template-columns: 340px 1fr; align-items: start; } .adm-wiki > aside { position: sticky; top: 90px; } }
 .adm-wiki-list { display: grid; max-height: 60vh; overflow: auto; margin-top: 10px; } .adm-wiki-list button { text-align: left; border: 0; background: none; padding: 9px 8px; border-radius: 8px; cursor: pointer; display: grid; gap: 2px; font-size: 13.5px; } .adm-wiki-list button:hover { background: #f6f4ee; } .adm-wiki-list button[aria-pressed="true"] { background: #eef4ef; } .adm-wiki-list small { color: var(--muted); font-size: 11.5px; }
 .adm-side nav { flex: 1; min-height: 0; padding-right: 2px; scrollbar-width: thin; } .adm-group a { padding: 7px 10px; font-size: 13.5px; } .adm-side nav { gap: 10px; }
-/* Tax invoice */
-.inv-page { max-width: 900px; } .inv-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-.invoice { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 28px; font-size: 13.5px; color: #1d2a24; }
-.inv-head { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; border-bottom: 2px solid var(--forest); padding-bottom: 16px; }
-.inv-brand { font-family: var(--font-display); font-size: 22px; color: var(--forest); } .inv-head p { margin: 2px 0; } .inv-warn { color: #a8661a; font-weight: 600; }
-.inv-title h1 { font-size: 1.5rem; margin-bottom: 8px; } .inv-title dl { display: grid; grid-template-columns: auto auto; gap: 3px 14px; margin: 0; } .inv-title dt { color: var(--muted); } .inv-title dd { margin: 0; font-weight: 600; }
-.inv-parties { padding: 14px 0; } .inv-parties h3 { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-family: var(--font-body); margin-bottom: 4px; }
-.inv-table { overflow-x: auto; } .inv-table table { width: 100%; border-collapse: collapse; font-size: 12.5px; } .inv-table th { background: #f3efe5; text-align: left; padding: 7px 6px; font-size: 11px; }
-.inv-table td { padding: 7px 6px; border-bottom: 1px solid #eee8db; vertical-align: top; } .inv-table td small { color: var(--muted); }
-.inv-sum { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-top: 14px; } .inv-words { max-width: 420px; }
-.inv-sum dl { display: grid; grid-template-columns: auto auto; gap: 4px 20px; margin: 0; min-width: 240px; } .inv-sum dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
-.inv-grand { font-weight: 700; font-size: 15px; border-top: 1px solid var(--line); padding-top: 6px; }
-.inv-foot { margin-top: 20px; padding-top: 12px; border-top: 1px dashed var(--line); color: var(--muted); font-size: 12px; }
-@media print { .announce, .header, .footer, .bottom-nav, .no-print, .offer-wrap, .drawer, .scrim { display: none !important; } body { background: #fff; } .invoice { border: 0; padding: 0; } .inv-page { max-width: none; padding: 0 !important; } }
+/* Invoice — A4 sheet matching EssenceKraft_Invoice_Final.pdf (all positions in pt, top-down) */
+.inv-page { max-width: 860px; } .inv-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 10px; flex-wrap: wrap; }
+.ekinv-fit { width: 100%; max-width: 793.7px; margin: 0 auto; }
+.ekinv { --ink: #123e30; position: relative; width: 595.28pt; height: 841.89pt; transform: scale(var(--k, 1)); transform-origin: 0 0; background: #f7f8f3; color: var(--ink);
+  font-family: Helvetica, Arial, 'Liberation Sans', sans-serif; font-size: 10pt; line-height: 15pt; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,.12);
+  -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.ekinv-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ekinv-logo { position: absolute; left: 85pt; top: 31.06pt; width: 83pt; height: 90.94pt; }
+.ekinv-contact { position: absolute; left: 365pt; top: 0; margin: 0; padding: 0; list-style: none; color: #0b3024; font-family: 'Times New Roman', Times, 'Liberation Serif', serif; }
+.ekinv-contact li { position: absolute; left: 0; white-space: nowrap; }
+.ekinv-contact li::before { content: ''; position: absolute; left: -10.8pt; width: 3.6pt; height: 3.6pt; border-radius: 50%; background: #a87d38; }
+.ekinv-contact .b12 { top: 60.4pt; font: 700 12pt/14.4pt 'Times New Roman', Times, 'Liberation Serif', serif; } .ekinv-contact .b12::before { top: 6.8pt; }
+.ekinv-contact .b11 { top: 78.3pt; font: 700 11pt/13.2pt 'Times New Roman', Times, 'Liberation Serif', serif; } .ekinv-contact .b11::before { top: 5.9pt; }
+.ekinv-contact .r11 { top: 94.3pt; font: 400 11pt/13pt 'Times New Roman', Times, 'Liberation Serif', serif; } .ekinv-contact .r11::before { top: 5.9pt; }
+.ekinv-title { position: absolute; left: 0; right: 0; top: 162.2pt; margin: 0; text-align: center; font: 700 23pt/28pt Helvetica, Arial, 'Liberation Sans', sans-serif; color: var(--ink); letter-spacing: 0; }
+.ekinv-bill { position: absolute; left: 55.14pt; top: 205.3pt; display: grid; max-width: 300pt; }
+.ekinv-bill span, .ekinv-meta span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ekinv-meta { position: absolute; right: 55.14pt; top: 205.3pt; display: grid; text-align: right; }
+.ekinv-body { position: absolute; left: 55.14pt; width: 485pt; top: 325pt; }
+.ekinv-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 10pt; }
+.ekinv-table thead th { background: var(--ink); color: #fff; font-weight: 700; font-size: 10pt; border: 0; letter-spacing: 0; text-transform: none; white-space: nowrap; height: 30pt; padding: 0 6pt; line-height: 12pt; vertical-align: middle; }
+.ekinv-table td { height: 36pt; padding: 0 6pt; border-bottom: .5pt solid #d4d6ce; vertical-align: middle; line-height: 13pt; }
+.ekinv-table .c-no { width: 34pt; text-align: left; } .ekinv-table .c-desc { text-align: left; padding-left: 0; }
+.ekinv-table th:nth-child(3), .ekinv-table td:nth-child(3) { width: 58pt; } .ekinv-table th:nth-child(4), .ekinv-table td:nth-child(4) { width: 95pt; }
+.ekinv-table .c-num, .ekinv-table .c-amt { text-align: right; } .ekinv-table .c-amt { width: 105pt; }
+.ekinv-table td small { display: block; font-size: 8pt; line-height: 10pt; opacity: .8; }
+.ekinv-total { display: flex; justify-content: space-between; align-items: center; margin-top: 12pt; height: 38pt; padding: 6pt 6pt 0; box-sizing: border-box; background: var(--ink); color: #fff; font: 700 13pt/1 Helvetica, Arial, 'Liberation Sans', sans-serif; }
+.ekinv-words { margin: 0; padding: 11.9pt 0 0 5.86pt; }
+.ekinv-gst { margin: 0; padding: 10.4pt 0 0 5.86pt; font-size: 9pt; line-height: 13pt; }
+.ekinv-foot { margin: 0; padding: 45.6pt 0 0; text-align: center; font-size: 9pt; line-height: 13pt; }
+@page { size: A4; margin: 0; }
+@media print {
+  .announce, .header, .footer, .bottom-nav, .no-print, .offer-wrap, .drawer, .scrim, .adm-side, .adm-top { display: none !important; }
+  html, body { background: #fff; margin: 0; } .inv-page, main.inv-page { max-width: none; padding: 0 !important; margin: 0 !important; }
+  .ekinv-fit { max-width: none; height: auto !important; } .ekinv { transform: none; box-shadow: none; }
+}
 /* Order timeline */
 .timeline { list-style: none; margin: 0; padding: 0; display: grid; } .timeline li { display: grid; grid-template-columns: 26px 1fr; gap: 10px; padding-bottom: 14px; position: relative; }
 .timeline li::before { content: ''; position: absolute; left: 11px; top: 24px; bottom: 0; width: 2px; background: var(--line); } .timeline li:last-child::before { display: none; }

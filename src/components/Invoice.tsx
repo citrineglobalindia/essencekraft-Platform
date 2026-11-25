@@ -1,4 +1,5 @@
 'use client';
+import { useEffect, useRef, useState } from 'react';
 import { selText, type Sel } from '@/lib/combo';
 // GST tax invoice (prices are GST-inclusive). Intra-state → CGST+SGST, inter-state → IGST.
 type Item = { product_name: string; variant_label: string; sku: string; unit_price: number; qty: number; hsn?: string | null; gst_rate?: number | null; selections?: Sel[] | null };
@@ -13,14 +14,15 @@ const STATE_CODE: Record<string, string> = { '01': 'Jammu and Kashmir', '02': 'H
 function words(n: number): string {
   const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
   const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-  const two = (x: number) => x < 20 ? a[x] : `${b[Math.floor(x / 10)]}${x % 10 ? ' ' + a[x % 10] : ''}`;
-  const three = (x: number) => `${x >= 100 ? a[Math.floor(x / 100)] + ' Hundred' + (x % 100 ? ' ' : '') : ''}${x % 100 ? two(x % 100) : ''}`;
+  const two = (x: number) => x < 20 ? a[x] : `${b[Math.floor(x / 10)]}${x % 10 ? '-' + a[x % 10] : ''}`;
+  const three = (x: number) => `${x >= 100 ? a[Math.floor(x / 100)] + ' Hundred' + (x % 100 ? ' and ' : '') : ''}${x % 100 ? two(x % 100) : ''}`;
   if (n === 0) return 'Zero';
   const parts: string[] = []; const cr = Math.floor(n / 1e7), lk = Math.floor((n % 1e7) / 1e5), th = Math.floor((n % 1e5) / 1000), rest = n % 1000;
-  if (cr) parts.push(`${three(cr)} Crore`); if (lk) parts.push(`${two(lk)} Lakh`); if (th) parts.push(`${two(th)} Thousand`); if (rest) parts.push(three(rest));
+  if (cr) parts.push(`${three(cr)} Crore`); if (lk) parts.push(`${two(lk)} Lakh`); if (th) parts.push(`${two(th)} Thousand`);
+  if (rest) parts.push(n >= 1000 && rest < 100 ? `and ${two(rest)}` : three(rest));
   return parts.join(' ');
 }
-export function amountInWords(n: number) { const r = Math.floor(n), p = Math.round((n - r) * 100); return `Rupees ${words(r)}${p ? ` and ${words(p)} Paise` : ''} Only`; }
+export function amountInWords(n: number) { const r = Math.floor(n), p = Math.round((n - r) * 100); return `Rupees ${words(r)}${p ? ` and ${words(p)} Paise` : ''} Only.`; }
 
 export function computeTax(o: InvOrder, s: Seller) {
   const sellerState = s.gstin && /^\d{2}/.test(s.gstin) ? STATE_CODE[s.gstin.slice(0, 2)] : 'Karnataka';
@@ -39,29 +41,57 @@ export function computeTax(o: InvOrder, s: Seller) {
   return { intra, sellerState, lines, shipTaxable, shipTax, maxRate, taxable, tax, cgst: intra ? r2(tax / 2) : 0, sgst: intra ? r2(tax - r2(tax / 2)) : 0, igst: intra ? 0 : tax };
 }
 
+const num = (n: number) => n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtPhone = (p: string) => { const d = String(p ?? '').replace(/\D/g, '').slice(-10); return d.length === 10 ? `+91 ${d.slice(0, 5)} ${d.slice(5)}` : p; };
+export const DEFAULT_GSTIN = '29BICPS1895N1ZD';
+
+/** EssenceKraft invoice — A4, laid out to match the approved design (EssenceKraft_Invoice_Final.pdf). Prices are GST-inclusive. */
 export function Invoice({ o, seller }: { o: InvOrder; seller: Seller }) {
-  const t = computeTax(o, seller);
-  const date = new Date(o.invoice_date ?? o.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const date = new Date(o.invoice_date ?? o.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
+  const a = o.address ?? {};
+  const rows: { desc: string; sub?: string; qty: number; rate: number; amount: number }[] = o.items.map(i => ({
+    desc: `${i.product_name}${i.variant_label ? ` - ${i.variant_label}` : ''}`, sub: i.selections?.length ? selText(i.selections) : undefined,
+    qty: i.qty, rate: Number(i.unit_price), amount: Number(i.unit_price) * i.qty }));
+  if (Number(o.shipping) > 0) rows.push({ desc: 'Shipping charges', qty: 1, rate: Number(o.shipping), amount: Number(o.shipping) });
+  if (Number(o.discount) > 0) rows.push({ desc: `Discount${o.coupon_code ? ` (${o.coupon_code})` : ''}`, qty: 1, rate: -Number(o.discount), amount: -Number(o.discount) });
+  const isInv = !!o.invoice_no;
+  // Scale the A4 sheet down on narrow screens; printing always uses full A4 (CSS resets the scale).
+  const box = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
+  useEffect(() => { const el = box.current; if (!el) return; const fit = () => setK(Math.min(1, el.clientWidth / 793.7)); fit();
+    const ro = new ResizeObserver(fit); ro.observe(el); return () => ro.disconnect(); }, []);
   return (
-    <article className="invoice">
-      <header className="inv-head">
-        <div><b className="inv-brand">{seller.legal_name || 'EssenceKraft'}</b><p>{seller.address || 'Mysuru, Karnataka'}</p>{seller.gstin ? <p>GSTIN: <b>{seller.gstin}</b></p> : <p className="inv-warn">GSTIN not set — add it in Admin → Settings</p>}<p>{seller.support_email}</p></div>
-        <div className="inv-title"><h1>{o.invoice_no ? 'Tax Invoice' : 'Order Summary'}</h1><dl>
-          {o.invoice_no && <><dt>Invoice no.</dt><dd>{o.invoice_no}</dd></>}<dt>{o.invoice_no ? 'Invoice date' : 'Order date'}</dt><dd>{date}</dd><dt>Order no.</dt><dd>{o.order_no}</dd>
-          <dt>Place of supply</dt><dd>{o.address.state}</dd><dt>Payment</dt><dd>{o.payment_method === 'cod' ? 'Cash on delivery' : 'Prepaid (Razorpay)'} · {o.payment_status}</dd></dl></div>
-      </header>
-      <section className="inv-parties"><div><h3>Bill to / Ship to</h3><p><b>{o.full_name}</b><br />{o.address.line1}{o.address.line2 ? `, ${o.address.line2}` : ''}<br />{o.address.city}, {o.address.state} {o.address.pincode}<br />{o.phone} · {o.email}</p></div></section>
-      <div className="inv-table"><table>
-        <thead><tr><th>#</th><th>Item</th><th>HSN</th><th>Qty</th><th>Rate</th><th>Discount</th><th>Taxable</th><th>GST</th>{t.intra ? <><th>CGST</th><th>SGST</th></> : <th>IGST</th>}<th>Total</th></tr></thead>
-        <tbody>{t.lines.map((l, i) => <tr key={i}><td>{i + 1}</td><td>{l.product_name}<br /><small>{l.variant_label} · {l.sku}</small>{l.selections?.length ? <><br /><small>Includes: {selText(l.selections)}</small></> : null}</td><td>{l.hsn ?? '3301'}</td><td>{l.qty}</td><td>{money(Number(l.unit_price))}</td><td>{l.discount ? money(l.discount) : '—'}</td><td>{money(l.taxable)}</td><td>{l.rate}%</td>
-          {t.intra ? <><td>{money(r2(l.tax / 2))}</td><td>{money(r2(l.tax - r2(l.tax / 2)))}</td></> : <td>{money(l.tax)}</td>}<td>{money(l.total)}</td></tr>)}
-          {Number(o.shipping) > 0 && <tr><td>{t.lines.length + 1}</td><td>Shipping &amp; handling</td><td>9965</td><td>1</td><td>{money(Number(o.shipping))}</td><td>—</td><td>{money(t.shipTaxable)}</td><td>{t.maxRate}%</td>
-            {t.intra ? <><td>{money(r2(t.shipTax / 2))}</td><td>{money(r2(t.shipTax - r2(t.shipTax / 2)))}</td></> : <td>{money(t.shipTax)}</td>}<td>{money(Number(o.shipping))}</td></tr>}</tbody>
-      </table></div>
-      <section className="inv-sum"><p className="inv-words"><b>Amount in words:</b> {amountInWords(Number(o.total))}</p>
-        <dl><dt>Taxable value</dt><dd>{money(t.taxable)}</dd>{t.intra ? <><dt>CGST</dt><dd>{money(t.cgst)}</dd><dt>SGST</dt><dd>{money(t.sgst)}</dd></> : <><dt>IGST</dt><dd>{money(t.igst)}</dd></>}
-          {o.coupon_code && <><dt>Coupon</dt><dd>{o.coupon_code}</dd></>}<dt className="inv-grand">Invoice total</dt><dd className="inv-grand">{money(Number(o.total))}</dd></dl></section>
-      <footer className="inv-foot"><p>Prices are inclusive of GST. This is a computer-generated invoice and does not require a signature.</p><p>Thank you for choosing pure. — {seller.legal_name || 'EssenceKraft'}</p></footer>
-    </article>
+    <div className="ekinv-fit" ref={box} style={{ ['--k' as string]: k, height: `calc(841.89pt * ${k})` }}><article className="ekinv" aria-label={isInv ? `Invoice ${o.invoice_no}` : `Order summary ${o.order_no}`}>
+      <img className="ekinv-bg" src="/invoice/letterhead.jpg" alt="" />
+      <img className="ekinv-logo" src="/invoice/logo.png" alt="essenceKRAFT — The Alchemy of Scent" />
+      <ul className="ekinv-contact">
+        <li className="b12">+91 96069 90666</li>
+        <li className="b11">www.essencekraft.in</li>
+        <li className="r11">No 32, ground floor, 8th main<br />Yadavagiri, Mysore - 570020</li>
+      </ul>
+      <h1 className="ekinv-title">{isInv ? 'INVOICE' : 'ORDER SUMMARY'}</h1>
+      <div className="ekinv-bill">
+        <b>Bill to</b>
+        <span>{o.full_name}</span>
+        {a.line1 && <span>{a.line1}{a.line2 ? ',' : ''}</span>}
+        {a.line2 && <span>{a.line2}{/,\s*$/.test(a.line2) ? '' : ','}</span>}
+        <span>{[a.city, a.pincode].filter(Boolean).join(' - ')}</span>
+        <span>Phone: {fmtPhone(o.phone)}</span>
+      </div>
+      <div className="ekinv-meta">
+        <span><b>{isInv ? 'Invoice date:' : 'Order date:'}</b> {date}</span>
+        <span><b>{isInv ? 'Invoice no.:' : 'Order no.:'} {isInv ? o.invoice_no : o.order_no}</b></span>
+        <span><b>GSTIN:</b> {seller.gstin || DEFAULT_GSTIN}</span>
+      </div>
+      <div className="ekinv-body">
+        <table className="ekinv-table">
+          <thead><tr><th className="c-no">#</th><th className="c-desc">Item description</th><th className="c-num">Qty</th><th className="c-num">Rate (INR)</th><th className="c-amt">Amount (INR)</th></tr></thead>
+          <tbody>{rows.map((r, i) => <tr key={i}><td className="c-no">{i + 1}</td><td className="c-desc">{r.desc}{r.sub && <small>{r.sub}</small>}</td><td className="c-num">{r.qty}</td><td className="c-num">{r.rate < 0 ? '-' : ''}{num(Math.abs(r.rate))}</td><td className="c-amt">{r.amount < 0 ? '-' : ''}{num(Math.abs(r.amount))}</td></tr>)}</tbody>
+        </table>
+        <div className="ekinv-total"><span>Total amount (INR)</span><span>{num(Number(o.total))}</span></div>
+        <p className="ekinv-words"><b>Amount in words:</b> {amountInWords(Number(o.total))}</p>
+        <p className="ekinv-gst">All prices and the total amount are inclusive of GST.</p>
+        <p className="ekinv-foot">This is a computer-generated invoice and does not require a physical signature.</p>
+      </div>
+    </article></div>
   );
 }
