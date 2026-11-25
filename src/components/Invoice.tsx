@@ -43,6 +43,9 @@ export function computeTax(o: InvOrder, s: Seller) {
 
 const num = (n: number) => n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtPhone = (p: string) => { const d = String(p ?? '').replace(/\D/g, '').slice(-10); return d.length === 10 ? `+91 ${d.slice(0, 5)} ${d.slice(5)}` : p; };
+const squash = (x: string) => x.toLowerCase().replace(/[^a-z0-9]/g, '');
+/** “Name - size”, without repeating the size when the product name already includes it (e.g. “Diffuser 300ML” + “300 ml”). */
+const itemName = (name: string, label?: string) => { const n = (name ?? '').trim(); const l = (label ?? '').trim(); return l && !squash(n).includes(squash(l)) ? `${n} - ${l}` : n; };
 export const DEFAULT_GSTIN = '29BICPS1895N1ZD';
 
 /** EssenceKraft invoice — A4, laid out to match the approved design (EssenceKraft_Invoice_Final.pdf). Prices are GST-inclusive. */
@@ -50,7 +53,7 @@ export function Invoice({ o, seller }: { o: InvOrder; seller: Seller }) {
   const date = new Date(o.invoice_date ?? o.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
   const a = o.address ?? {};
   const rows: { desc: string; sub?: string; qty: number; rate: number; amount: number }[] = o.items.map(i => ({
-    desc: `${i.product_name}${i.variant_label ? ` - ${i.variant_label}` : ''}`, sub: i.selections?.length ? selText(i.selections) : undefined,
+    desc: itemName(i.product_name, i.variant_label), sub: i.selections?.length ? selText(i.selections) : undefined,
     qty: i.qty, rate: Number(i.unit_price), amount: Number(i.unit_price) * i.qty }));
   if (Number(o.shipping) > 0) rows.push({ desc: 'Shipping charges', qty: 1, rate: Number(o.shipping), amount: Number(o.shipping) });
   if (Number(o.discount) > 0) rows.push({ desc: `Discount${o.coupon_code ? ` (${o.coupon_code})` : ''}`, qty: 1, rate: -Number(o.discount), amount: -Number(o.discount) });
