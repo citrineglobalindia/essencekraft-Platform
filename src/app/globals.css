@@ -975,3 +975,11 @@ tr:last-child td { border-bottom: 0; }
 .order-btn{display:block;width:28px;height:22px;margin:1px 0;border:1px solid var(--line,#ddd);background:#fff;border-radius:6px;font-size:10px;line-height:1;cursor:pointer;color:inherit}
 .order-btn:hover:not(:disabled){background:#f3eefa;border-color:#7a5a9e}
 .order-btn:disabled{opacity:.3;cursor:default}
+/* Admin payment links */
+.paylink{display:grid;gap:8px;margin-top:6px}
+.pl-lines{display:grid;gap:10px}
+.pl-line{display:grid;grid-template-columns:1fr 70px 110px auto;gap:10px;align-items:end;padding:10px 0;border-bottom:1px solid var(--line,#e6e1d8)}
+.pl-name{display:grid;gap:4px;align-self:center}
+.pl-total{width:100%;font-size:14px}.pl-total td,.pl-total th{padding:3px 0;text-align:left}.pl-total td:last-child,.pl-total th:last-child{text-align:right}
+@media (max-width:520px){.pl-line{grid-template-columns:1fr 1fr}.pl-name{grid-column:1/-1}}
+.pl-total th{font-size:16px;text-transform:none;letter-spacing:0;color:var(--forest,#0f3d2e);background:none;padding-top:8px;border-top:1px solid var(--line,#e6e1d8)}

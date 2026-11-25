@@ -13,10 +13,11 @@ async function staffPost(path: string, body: unknown) {
 }
 import { inr } from '@/lib/format';
 import { selText, type Sel } from '@/lib/combo';
+import { PaymentLinkShare } from '@/components/PaymentLinkShare';
 
 type Item = { id: number; product_name: string; variant_label: string; sku: string; unit_price: number; qty: number; selections?: Sel[] | null };
 type O = { id: string; order_no: string; full_name: string; email: string; phone: string; address: Record<string, string>; subtotal: number; discount: number; shipping: number; total: number; coupon_code: string | null;
-  status: string; payment_status: string; payment_method: string; payment_ref: string | null; tracking_url: string | null; courier: string | null; awb: string | null; expected_delivery: string | null; invoice_no: string | null; notes: string | null; marketing_consent: boolean; created_at: string;
+  status: string; payment_status: string; payment_method: string; payment_ref: string | null; tracking_url: string | null; courier: string | null; awb: string | null; expected_delivery: string | null; invoice_no: string | null; notes: string | null; marketing_consent: boolean; created_at: string; access_token: string; source?: string | null; link_expires_at?: string | null;
   first_touch: Record<string, string> | null; last_touch: Record<string, string> | null; order_items: Item[]; order_events?: { id: number; status: string; note: string | null; created_at: string }[] };
 const COURIERS: Record<string, (awb: string) => string> = { Delhivery: a => `https://www.delhivery.com/track/package/${a}`, 'Blue Dart': a => `https://www.bluedart.com/web/guest/trackdartresult?trackFor=0&trackNo=${a}`, DTDC: a => `https://www.dtdc.in/tracking.asp?strCnno=${a}`, 'India Post': a => `https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx?cn=${a}`, Shiprocket: a => `https://shiprocket.co/tracking/${a}`, Xpressbees: a => `https://www.xpressbees.com/shipment/tracking?awbNo=${a}`, Ekart: a => `https://ekartlogistics.com/shipmenttrack/${a}`, Other: () => '' };
 const linkFor = (courier: string, awb: string, fallback: string) => (COURIERS[courier] ? COURIERS[courier](awb) : fallback);
@@ -56,6 +57,11 @@ export default function OrderDetail({ params }: { params: { id: string } }) {
       <Link className="btn btn-ghost btn-sm" href={`/admin/invoice/${o.id}`} target="_blank">{o.invoice_no ? `Invoice ${o.invoice_no}` : 'Order summary'} ↗</Link>
     </div>
     {err && <p className="notice error" role="alert">{err}</p>}
+    {o.payment_method === 'razorpay' && o.payment_status !== 'paid' && o.status !== 'cancelled' && <section className="panel" style={{ marginBottom: 16 }}>
+      <h2>{o.source === 'payment_link' ? 'Waiting for payment' : 'Payment not completed'}</h2>
+      <p className="muted" style={{ margin: '4px 0 0', fontSize: 14 }}>{o.link_expires_at && new Date(o.link_expires_at) < new Date() ? 'This link has expired — the customer can’t pay with it any more. Cancel the order to return the stock, then create a new link.' : 'Send the customer this link. Once they pay, the order is confirmed automatically, the confirmation email goes out, and it ships via Shiprocket (if auto-send is on).'}</p>
+      <PaymentLinkShare id={o.id} orderNo={o.order_no} token={o.access_token} total={Number(o.total)} phone={o.phone} name={o.full_name} expires={o.link_expires_at} />
+    </section>}
     <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))', alignItems: 'start' }}>
       <section className="panel"><h2>Items</h2>
         <div className="table-wrap"><table><thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead><tbody>
@@ -95,7 +101,7 @@ export default function OrderDetail({ params }: { params: { id: string } }) {
       <section className="panel"><h2>Customer</h2><p><b>{o.full_name}</b><br />{o.email}<br />{o.phone}<br /><span className="muted">Marketing consent: {o.marketing_consent ? 'yes' : 'no'}</span></p>
         <p style={{ marginTop: 10 }}>{o.address.line1}{o.address.line2 && `, ${o.address.line2}`}{o.address.landmark && ` (near ${o.address.landmark})`}<br />{o.address.city}, {o.address.state} {o.address.pincode}</p></section>
       <section className="panel"><h2>Payment &amp; attribution</h2>
-        <p style={{ fontSize: 14 }}>Method: {o.payment_method === 'cod' ? 'Cash on delivery' : 'Razorpay'}<br />Gateway ref: {o.payment_ref ?? '—'}{o.notes && <><br />{o.notes}</>}</p>
+        <p style={{ fontSize: 14 }}>Method: {o.payment_method === 'cod' ? 'Cash on delivery' : o.source === 'payment_link' ? 'Razorpay (payment link created in admin)' : 'Razorpay'}<br />Gateway ref: {o.payment_ref ?? '—'}{o.notes && <><br />{o.notes}</>}</p>
         <p style={{ fontSize: 13.5, marginTop: 10 }}><b>First touch</b><br /><span className="muted">{touch(o.first_touch)}</span></p>
         <p style={{ fontSize: 13.5, marginTop: 8 }}><b>Last touch</b><br /><span className="muted">{touch(o.last_touch)}</span></p></section>
     </div>

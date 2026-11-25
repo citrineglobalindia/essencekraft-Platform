@@ -7,10 +7,12 @@ export async function POST(req: Request) {
   const id = process.env.RAZORPAY_KEY_ID, secret = process.env.RAZORPAY_KEY_SECRET;
   if (!id || !secret) return NextResponse.json({ error: 'Online payments are not configured' }, { status: 503 });
   const db = adminClient();
-  const { data: o } = await db.from('orders').select('id, order_no, total, payment_status, payment_ref, email, phone, full_name')
+  const { data: o } = await db.from('orders').select('id, order_no, total, status, payment_status, payment_ref, email, phone, full_name, link_expires_at')
     .eq('order_no', order_no).eq('access_token', token).maybeSingle();
   if (!o) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   if (o.payment_status === 'paid') return NextResponse.json({ error: 'Order already paid' }, { status: 409 });
+  if (o.status === 'cancelled') return NextResponse.json({ error: 'This order was cancelled' }, { status: 410 });
+  if (o.link_expires_at && new Date(o.link_expires_at) < new Date()) return NextResponse.json({ error: 'This payment link has expired. Please contact us for a new one.' }, { status: 410 });
   let rzpId = o.payment_ref as string | null;
   if (!rzpId) {
     const r = await fetch('https://api.razorpay.com/v1/orders', {

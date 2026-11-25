@@ -65,3 +65,39 @@ export async function sendOrderConfirmation(orderNo: string, origin: string) {
     `<p><b>${esc(o.full_name)}</b> (${esc(o.email)}, ${esc(o.phone)}) placed <b>${esc(o.order_no)}</b> for <b>${inr(o.total)}</b> — ${paid ? 'paid online' : 'cash on delivery'}.</p><table>${rows}</table><p><a href="${origin}/admin/orders/${o.id}">Open in admin</a></p>`).catch(() => false);
   return ok;
 }
+
+/** Emails a customer the secure link to pay an order an admin created for them (Admin → Orders → Create payment link). */
+export async function sendPaymentLink(orderId: string, origin: string) {
+  if (!process.env.BREVO_API_KEY) throw new Error('Email is not set up (BREVO_API_KEY missing in Vercel).');
+  const db = adminClient();
+  const { data: o } = await db.from('orders').select('id, order_no, access_token, email, full_name, subtotal, discount, shipping, total, payment_status, status, link_expires_at').eq('id', orderId).maybeSingle();
+  if (!o) throw new Error('Order not found');
+  if (o.payment_status === 'paid') throw new Error('This order is already paid');
+  if (o.status === 'cancelled') throw new Error('This order is cancelled');
+  const [{ data: items }, { data: st }] = await Promise.all([
+    db.from('order_items').select('product_name, variant_label, qty, unit_price').eq('order_id', o.id),
+    db.from('settings').select('value').eq('key', 'store').maybeSingle(),
+  ]);
+  const store = (st?.value ?? {}) as { email?: string; support_email?: string };
+  const link = `${origin}/order/${o.order_no}?t=${o.access_token}`;
+  const rows = (items ?? []).map(i => `<tr><td style="padding:8px 0;border-bottom:1px solid #eee">${esc(i.product_name)}<br><small style="color:#777">${esc(i.variant_label)} × ${i.qty}</small></td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right">${inr(Number(i.unit_price) * i.qty)}</td></tr>`).join('');
+  const line = (l: string, v: string, b = false) => `<tr><td style="padding:3px 0;${b ? 'font-weight:700' : 'color:#555'}">${l}</td><td style="padding:3px 0;text-align:right;${b ? 'font-weight:700' : ''}">${v}</td></tr>`;
+  const exp = o.link_expires_at ? new Date(o.link_expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }) : '';
+  const html = `<!doctype html><html><body style="margin:0;background:#f6f3ee;font-family:Arial,Helvetica,sans-serif;color:#222">
+<div style="max-width:560px;margin:0 auto;padding:24px 16px">
+ <div style="background:#2f4a3a;color:#fff;border-radius:12px 12px 0 0;padding:20px 24px"><div style="font-size:20px;font-weight:700">EssenceKraft</div><div style="font-size:12px;opacity:.8;letter-spacing:1px">NATURE IN EVERY DROP</div></div>
+ <div style="background:#fff;border-radius:0 0 12px 12px;padding:24px">
+  <h1 style="font-size:20px;margin:0 0 6px">Hi ${esc(o.full_name?.split(' ')[0] || 'there')}, your order is ready for payment</h1>
+  <p style="margin:0 0 16px;color:#555">Order <b>${esc(o.order_no)}</b>${exp ? ` · pay by ${exp}` : ''}</p>
+  <table style="width:100%;border-collapse:collapse;font-size:14px">${rows}</table>
+  <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:10px">
+   ${line('Subtotal', inr(o.subtotal))}${Number(o.discount) ? line('Discount', '−' + inr(o.discount)) : ''}${line('Shipping', Number(o.shipping) ? inr(o.shipping) : 'Free')}${line('Total to pay', inr(o.total), true)}
+  </table>
+  <div style="margin:22px 0 8px"><a href="${link}" style="display:inline-block;background:#2f4a3a;color:#fff;text-decoration:none;padding:13px 22px;border-radius:8px;font-weight:700">Pay ${inr(o.total)} securely</a></div>
+  <p style="font-size:12px;color:#888;margin-top:16px">UPI, cards, net banking and wallets via Razorpay. You'll get a confirmation email once the payment goes through. Questions? Just reply to this email.</p>
+ </div>
+</div></body></html>`;
+  const ok = await sendEmail([{ email: o.email, name: o.full_name ?? undefined }], `Payment link for order ${o.order_no} — ${inr(o.total)}`, html, store.support_email || store.email);
+  if (!ok) throw new Error('The email service refused the message. Try again, or share the link on WhatsApp.');
+  return o.email as string;
+}

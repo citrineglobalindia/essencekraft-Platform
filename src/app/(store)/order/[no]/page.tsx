@@ -11,7 +11,7 @@ import { track } from '@/lib/attribution';
 type Item = { product_name?: string; name?: string; variant_label?: string; label?: string; qty: number; unit_price?: number; price?: number; selections?: Sel[] | null };
 type Order = { order_no: string; status: string; payment_status: string; payment_method: string; total: number; subtotal: number; discount: number; shipping: number;
   full_name: string; email: string; address: Record<string, string>; items: Item[]; created_at: string; tracking_url?: string; referral_code?: string | null;
-  courier?: string | null; awb?: string | null; expected_delivery?: string | null; invoice_no?: string | null; events?: { status: string; note: string | null; at: string }[] };
+  courier?: string | null; awb?: string | null; source?: string | null; link_expires_at?: string | null; expected_delivery?: string | null; invoice_no?: string | null; events?: { status: string; note: string | null; at: string }[] };
 const STEPS = ['placed', 'confirmed', 'packed', 'shipped', 'delivered'];
 
 export default function OrderPage({ params }: { params: { no: string } }) {
@@ -45,14 +45,21 @@ export default function OrderPage({ params }: { params: { no: string } }) {
     <div className="wrap checkout">
       <div>
         <section className="panel">
-          {unpaid ? <>
+          {unpaid ? (o.source === 'payment_link' ? (() => { const expired = !!o.link_expires_at && new Date(o.link_expires_at) < new Date(); return <>
+            <h1 style={{ fontSize: '1.8rem' }}>{expired ? 'This payment link has expired' : `Hi ${o.full_name.split(' ')[0]}, your order is ready`}</h1>
+            <p style={{ margin: '8px 0 14px' }}>{expired ? <>Order <b>{o.order_no}</b> can’t be paid with this link any more. Message us and we’ll send you a new one.</> : <>Order <b>{o.order_no}</b> · pay securely with UPI, card, net banking or wallet{o.link_expires_at ? <> by <b>{new Date(o.link_expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</b></> : null}.{o.payment_status === 'failed' ? ' Your last attempt didn’t go through — you won’t be charged twice.' : ''}</>}</p>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {!expired && <button className="btn btn-primary" disabled={paying} onClick={async () => { setPaying(true); await payOrder(o.order_no, token).catch(() => false); await load(); setPaying(false); }}>{paying ? 'Opening payment…' : `Pay ${inr(o.total)}`}</button>}
+              <a className="btn btn-ghost" href={`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Help with order ${o.order_no}`)}`} data-track="whatsapp_click">{expired ? 'Message us on WhatsApp' : 'Questions? WhatsApp us'}</a>
+            </div>
+          </>; })() : <>
             <h1 style={{ fontSize: '1.8rem' }}>Payment not completed</h1>
             <p style={{ margin: '8px 0 14px' }}>Order <b>{o.order_no}</b> is saved and your items are held for 45 minutes. You won’t be charged twice.</p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button className="btn btn-primary" disabled={paying} onClick={async () => { setPaying(true); await payOrder(o.order_no, token).catch(() => false); await load(); setPaying(false); }}>{paying ? 'Opening payment…' : `Retry payment · ${inr(o.total)}`}</button>
               <a className="btn btn-ghost" href={`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Help with order ${o.order_no}`)}`} data-track="whatsapp_click">Get help on WhatsApp</a>
             </div>
-          </> : <>
+          </>) : <>
             <h1 style={{ fontSize: '1.8rem' }}>{o.status === 'cancelled' ? 'Order cancelled' : 'Thank you, your order is placed'}</h1>
             <p style={{ marginTop: 8 }}>Order <b>{o.order_no}</b> · confirmation sent to {o.email}</p>
           </>}
