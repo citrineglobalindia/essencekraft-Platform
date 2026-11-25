@@ -39,7 +39,7 @@ function CartView() {
       </div>
       <aside className="panel" style={{ alignSelf: 'start' }}>
         <h2>Summary</h2>
-        <div className="totals"><div><span>Subtotal</span><span>{inr(subtotal)}</span></div><div className="muted"><span>Shipping, COD fee and coupons are calculated at checkout.</span></div>
+        <div className="totals"><div><span>Subtotal</span><span>{inr(subtotal)}</span></div><div className="muted"><span>Shipping and coupons are calculated at checkout.</span></div>
           <div className="grand"><span>Estimated total</span><span>{inr(subtotal)}</span></div></div>
         <Link href="/checkout" className="btn btn-primary btn-block" style={{ marginTop: 14 }}>Checkout</Link>
       </aside>

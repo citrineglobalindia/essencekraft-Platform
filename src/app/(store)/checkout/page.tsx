@@ -5,7 +5,7 @@ import { AuthModal } from '@/components/AuthModal';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useCart } from '@/lib/cart';
-import { COD_FEE, SHIPPING_FLAT, inr } from '@/lib/format';
+import { SHIPPING_FLAT, inr } from '@/lib/format';
 import { hasSupabase, browserClient } from '@/lib/supabase';
 import { getAttribution, track } from '@/lib/attribution';
 import { payOrder } from '@/lib/pay';
@@ -19,11 +19,11 @@ export default function Checkout() {
   const router = useRouter();
   const [f, setF] = useState({ email: '', phone: '', full_name: '', line1: '', line2: '', landmark: '', city: '', state: 'Karnataka', pincode: '' });
   const [consent, setConsent] = useState(false);
-  const [method, setMethod] = useState<'razorpay' | 'cod'>('razorpay');
+  const method = 'razorpay'; // online payment only (no cash on delivery)
   const [code, setCode] = useState(''); const [coupon, setCoupon] = useState<Coupon | null>(null); const [couponMsg, setCouponMsg] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false); const [fail, setFail] = useState('');
-  const [fees, setFees] = useState({ free_shipping_min: 999, shipping_flat: SHIPPING_FLAT, cod_fee: COD_FEE });
+  const [fees, setFees] = useState({ free_shipping_min: 999, shipping_flat: SHIPPING_FLAT });
   // Signed-in shoppers: prefill from their profile and saved addresses
   const user = useUser(); const [authOpen, setAuthOpen] = useState(true); const [saved, setSaved] = useState<{ id: string; label: string; full_name: string; phone: string; line1: string; line2: string | null; city: string; state: string; pincode: string; is_default: boolean }[]>([]); const [saveAddr, setSaveAddr] = useState(true);
   useEffect(() => {
@@ -50,9 +50,9 @@ export default function Checkout() {
 
   const t = useMemo(() => {
     const discount = coupon ? (coupon.kind === 'percent' ? Math.round(subtotal * coupon.value) / 100 : Math.min(coupon.value, subtotal)) : 0;
-    const shipping = (subtotal - discount >= fees.free_shipping_min ? 0 : fees.shipping_flat) + (method === 'cod' ? fees.cod_fee : 0);
+    const shipping = subtotal - discount >= fees.free_shipping_min ? 0 : fees.shipping_flat;
     return { discount, shipping, total: subtotal - discount + shipping };
-  }, [subtotal, coupon, method, fees]);
+  }, [subtotal, coupon, fees]);
 
   const upd = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF(s => ({ ...s, [k]: e.target.value }));
   const validate = () => {
@@ -88,7 +88,7 @@ export default function Checkout() {
       if (!hasSupabase) {
         order_no = 'EK' + String(Date.now()).slice(-6); token = 'demo';
         const demo = JSON.parse(localStorage.getItem('ek_demo_orders') || '{}');
-        demo[order_no] = { ...payload, order_no, items: lines, subtotal, ...t, status: 'placed', payment_status: method === 'cod' ? 'pending' : 'paid', created_at: new Date().toISOString() };
+        demo[order_no] = { ...payload, order_no, items: lines, subtotal, ...t, status: 'placed', payment_status: 'paid', created_at: new Date().toISOString() };
         localStorage.setItem('ek_demo_orders', JSON.stringify(demo));
       } else {
         const { data, error } = await browserClient().rpc('place_order', { payload });
@@ -98,10 +98,10 @@ export default function Checkout() {
           await browserClient().from('addresses').insert({ label: saved.length ? 'Address' : 'Home', full_name: f.full_name, phone: f.phone.replace(/\D/g, '').slice(-10), line1: f.line1, line2: f.line2 || null, city: f.city, state: f.state, pincode: f.pincode, is_default: !saved.length }).then(() => {}, () => {});
       }
       clear(); try { localStorage.removeItem('ek_cart_token'); } catch {}
-      if (method === 'razorpay' && hasSupabase) {
+      if (hasSupabase) {
         const paid = await payOrder(order_no, token).catch(() => false);
         router.push(`/order/${order_no}?t=${token}${paid ? '' : '&retry=1'}`);
-      } else { if (hasSupabase) await fetch('/api/orders/confirm', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ order_no, token }) }).catch(() => {}); router.push(`/order/${order_no}?t=${token}`); }
+      } else router.push(`/order/${order_no}?t=${token}`);
     } catch (e) { setFail(e instanceof Error ? e.message : 'Order could not be placed.'); setBusy(false); }
   };
 
@@ -145,8 +145,7 @@ export default function Checkout() {
           </div></section>
         <section className="panel"><h2>Payment</h2>
           <div style={{ display: 'grid', gap: 10 }}>
-            <label className="pay-opt"><input type="radio" name="pm" checked={method === 'razorpay'} onChange={() => setMethod('razorpay')} /><span><b>UPI, cards, net banking, wallets</b><br /><small className="muted">Secured by Razorpay. We never see your card details.</small></span></label>
-            <label className="pay-opt"><input type="radio" name="pm" checked={method === 'cod'} onChange={() => setMethod('cod')} /><span><b>Cash on delivery</b><br /><small className="muted">{fees.cod_fee ? `${inr(fees.cod_fee)} handling fee` : 'No extra fee'}</small></span></label>
+            <div className="pay-opt" style={{ cursor: 'default', borderColor: 'var(--forest)', background: '#f2f7f3' }}><span><b>UPI, cards, net banking, wallets</b><br /><small className="muted">Secured by Razorpay. We never see your card details.</small></span></div>
           </div></section>
       </div>
       <aside style={{ alignSelf: 'start', position: 'sticky', top: 90 }}>
@@ -157,11 +156,11 @@ export default function Checkout() {
           <div className="totals">
             <div><span>Subtotal</span><span>{inr(subtotal)}</span></div>
             {t.discount > 0 && <div><span>Discount ({coupon?.code})</span><span>−{inr(t.discount)}</span></div>}
-            <div><span>Shipping{method === 'cod' ? ' + COD' : ''}</span><span>{t.shipping ? inr(t.shipping) : 'Free'}</span></div>
+            <div><span>Shipping</span><span>{t.shipping ? inr(t.shipping) : 'Free'}</span></div>
             <div className="grand"><span>Total payable</span><span>{inr(t.total)}</span></div>
           </div>
           {fail && <p className="notice error" role="alert" style={{ marginTop: 12 }}>{fail}</p>}
-          <button className="btn btn-primary btn-block" style={{ marginTop: 14 }} disabled={busy} onClick={placeOrder}>{busy ? 'Placing order…' : method === 'cod' ? `Place order · ${inr(t.total)}` : `Pay ${inr(t.total)}`}</button>
+          <button className="btn btn-primary btn-block" style={{ marginTop: 14 }} disabled={busy} onClick={placeOrder}>{busy ? 'Placing order…' : `Pay ${inr(t.total)}`}</button>
           <p className="muted" style={{ fontSize: 12, marginTop: 10 }}>By placing this order you agree to our <Link href="/pages/terms" className="link">terms</Link> and <Link href="/pages/refund" className="link">refund policy</Link>.</p>
         </section>
       </aside>

@@ -40,7 +40,7 @@ export function Footer() {
           <li><LeafIcon size={18} />100% pure &amp; natural</li>
           <li><FlaskIcon size={18} />GC-MS tested batches</li>
           <li><PinIcon size={18} />Made in India</li>
-          <li><span aria-hidden>₹</span>UPI · Cards · COD</li>
+          <li><span aria-hidden>₹</span>UPI · Cards · Net banking</li>
         </ul>
         <div className="footer-base">
           <p>© {new Date().getFullYear()} EssenceKraft. All rights reserved.</p>

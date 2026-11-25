@@ -33,7 +33,7 @@ export default function Settings() {
     <Saved msg={msg} />
     <div className="adm-2col">
       <section className="adm-card form-grid"><div className="adm-card-h"><div><h3>Shipping & payments</h3><p>Used at checkout.</p></div></div>
-        <div className="form-grid two">{N('free_shipping_min', 'Free shipping above (₹)')}{N('shipping_flat', 'Flat shipping fee (₹)')}{N('cod_fee', 'COD handling fee (₹)', 'Set 0 to waive')}</div></section>
+        <div className="form-grid two">{N('free_shipping_min', 'Free shipping above (₹)')}{N('shipping_flat', 'Flat shipping fee (₹)')}</div></section>
       <section className="adm-card form-grid"><div className="adm-card-h"><div><h3>Shiprocket</h3><p>Used when an order is sent to Shiprocket. Login is set in Vercel (SHIPROCKET_EMAIL / SHIPROCKET_PASSWORD).</p></div></div>
         <label className="check"><input type="checkbox" checked={!!s.sr_auto} onChange={e => setS({ ...s, sr_auto: e.target.checked })} />Send confirmed orders to Shiprocket automatically (paid online or COD)</label>
         <div className="form-grid two">{T('sr_pickup', 'Pickup address nickname', 'Home-1')}{T('sr_pickup_pincode', 'Pickup pincode', '570020')}{N('sr_weight', 'Weight per bottle (kg)', 'e.g. 0.2')}{N('sr_l', 'Box length (cm)')}{N('sr_b', 'Box breadth (cm)')}{N('sr_h', 'Box height (cm)')}</div></section>

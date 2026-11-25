@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-// Product page: “Check delivery” — estimated days + COD availability from Shiprocket.
+// Product page: “Check delivery” — estimated delivery days from Shiprocket.
 export function PinCheck() {
   const [pin, setPin] = useState(''); const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<{ t: 'ok' | 'no'; m: string } | null>(null);
@@ -14,7 +14,7 @@ export function PinCheck() {
     if (j.serviceable === false) return setRes({ t: 'no', m: 'Sorry, we don’t deliver to this pincode yet.' });
     if (j.serviceable === null || j.serviceable === undefined) return setRes({ t: 'ok', m: 'We deliver across India — usually in 3–7 days.' });
     const when = j.days ? new Date(Date.now() + (j.days + 1) * 864e5).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : null;
-    setRes({ t: 'ok', m: `${when ? `Delivery by ${when}` : 'Delivers to this pincode'}${j.cod ? ' · Cash on delivery available' : ' · Prepaid only'}` });
+    setRes({ t: 'ok', m: `${when ? `Delivery by ${when}` : 'Delivers to this pincode'}` });
   };
   return <div className="pin-check">
     <b style={{ fontSize: 14 }}>Check delivery</b>
